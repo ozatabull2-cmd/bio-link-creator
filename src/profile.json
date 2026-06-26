@@ -1,0 +1,44 @@
+{
+  "profileTitle": "Ankara Çocuk Rehberi",
+  "profileBio": "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada! ✨",
+  "selectedAvatar": "🧒",
+  "selectedAvatarBg": "from-amber-200 to-orange-400",
+  "avatarType": "emoji",
+  "avatarUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80",
+  "activeThemeId": "slate_light",
+  "links": [
+    {
+      "id": "link-1",
+      "title": "Resmi Web Sitemiz",
+      "subtitle": "Etkinlik takvimini incele ve rezervasyon yap",
+      "url": "https://ankaracocuketkinlikler.com",
+      "iconType": "web",
+      "colorTheme": "indigo",
+      "clicks": 0
+    },
+    {
+      "id": "link-2",
+      "title": "WhatsApp Bilgi Grubu",
+      "subtitle": "Anlık etkinlik duyurularından anında haberdar ol",
+      "url": "https://chat.whatsapp.com/ankara-cocuk",
+      "iconType": "whatsapp",
+      "colorTheme": "emerald",
+      "clicks": 0
+    },
+    {
+      "id": "link-3",
+      "title": "Android Uygulamamız",
+      "subtitle": "Ücretsiz mobil uygulamamızı Google Play Store'dan indirin",
+      "url": "https://play.google.com/store",
+      "iconType": "store",
+      "colorTheme": "blue",
+      "clicks": 0
+    }
+  ],
+  "socials": {
+    "instagram": "https://instagram.com",
+    "whatsapp": "https://wa.me",
+    "youtube": "",
+    "twitter": ""
+  }
+}

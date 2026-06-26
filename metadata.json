@@ -1,0 +1,6 @@
+{
+  "name": "Bio-Link Creator & AI Optimizer",
+  "description": "An interactive, beautiful Linktree-style bio page builder and theme customizer. Features live mobile previews, click tracking, customized design presets, and a server-side Gemini AI assistant to optimize biographies and link hooks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
