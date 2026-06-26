@@ -9,8 +9,8 @@
   "links": [
     {
       "id": "link-1",
-      "title": "Resmi We",
-      "subtitle": "Etkinlik takvimini incele ve rezervasyon yap",
+      "title": "Ücretsiz Yaz Tatili Etkinlikleri - Yaz Kursları",
+      "subtitle": "Tüm Etkinlikleri gör",
       "url": "https://ankaracocuketkinlikler.com",
       "iconType": "web",
       "colorTheme": "indigo",
@@ -18,9 +18,9 @@
     },
     {
       "id": "link-2",
-      "title": "WhatsApp Bilgi Grubu",
-      "subtitle": "Anlık etkinlik duyurularından anında haberdar ol",
-      "url": "https://chat.whatsapp.com/ankara-cocuk",
+      "title": "WhatsApp Grubumuz",
+      "subtitle": "2500 Kişilik grubumuza katılın",
+      "url": "https://chat.whatsapp.com/IN6wSkz1HK22DDxV7Lu1st",
       "iconType": "whatsapp",
       "colorTheme": "emerald",
       "clicks": 0
@@ -28,8 +28,8 @@
     {
       "id": "link-3",
       "title": "Android Uygulamamız",
-      "subtitle": "Ücretsiz mobil uygulamamızı Google Play Store'dan indirin",
-      "url": "https://play.google.com/store",
+      "subtitle": "Ücretsiz Uygulamamız",
+      "url": "https://play.google.com/store/apps/details?id=com.ankara.cocuk.etkinlikler",
       "iconType": "store",
       "colorTheme": "blue",
       "clicks": 0
