@@ -136,19 +136,27 @@ const THEME_PRESETS: ThemePreset[] = [
 
 export default function App() {
   // --- STATE ---
-  const [profileTitle, setProfileTitle] = useState<string>(defaultProfile.profileTitle);
-  const [profileBio, setProfileBio] = useState<string>(defaultProfile.profileBio);
-  const [selectedAvatar, setSelectedAvatar] = useState<string>(defaultProfile.selectedAvatar);
-  const [selectedAvatarBg, setSelectedAvatarBg] = useState<string>(defaultProfile.selectedAvatarBg);
-  const [avatarType, setAvatarType] = useState<'emoji' | 'image'>(defaultProfile.avatarType as 'emoji' | 'image');
-  const [avatarUrl, setAvatarUrl] = useState<string>(defaultProfile.avatarUrl);
-  const [activeThemeId, setActiveThemeId] = useState<string>(defaultProfile.activeThemeId);
+  // Safe extraction of default profile details to handle any ES6 default wrapper differences across builders
+  const profileData = defaultProfile && (defaultProfile as any).default ? (defaultProfile as any).default : defaultProfile;
+
+  const [profileTitle, setProfileTitle] = useState<string>(profileData?.profileTitle || 'Ankara Çocuk Rehberi');
+  const [profileBio, setProfileBio] = useState<string>(profileData?.profileBio || "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada! ✨");
+  const [selectedAvatar, setSelectedAvatar] = useState<string>(profileData?.selectedAvatar || '🧒');
+  const [selectedAvatarBg, setSelectedAvatarBg] = useState<string>(profileData?.selectedAvatarBg || 'from-amber-200 to-orange-400');
+  const [avatarType, setAvatarType] = useState<'emoji' | 'image'>((profileData?.avatarType as 'emoji' | 'image') || 'emoji');
+  const [avatarUrl, setAvatarUrl] = useState<string>(profileData?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80');
+  const [activeThemeId, setActiveThemeId] = useState<string>(profileData?.activeThemeId || 'slate_light');
   
   // Custom Links
-  const [links, setLinks] = useState<LinkItem[]>(defaultProfile.links as LinkItem[]);
+  const [links, setLinks] = useState<LinkItem[]>((profileData?.links as LinkItem[]) || []);
 
   // Social Links
-  const [socials, setSocials] = useState(defaultProfile.socials);
+  const [socials, setSocials] = useState(profileData?.socials || {
+    instagram: 'https://instagram.com',
+    whatsapp: 'https://wa.me',
+    youtube: '',
+    twitter: ''
+  });
 
   // UI Navigation Tabs (Left Control Panel)
   const [controlTab, setControlTab] = useState<'links' | 'design' | 'ai-helper'>('links');
@@ -252,6 +260,9 @@ export default function App() {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
