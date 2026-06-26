@@ -9,12 +9,12 @@
   "links": [
     {
       "id": "link-1",
-      "title": "Resmi Web Sitemiz",
+      "title": "Resmi We",
       "subtitle": "Etkinlik takvimini incele ve rezervasyon yap",
       "url": "https://ankaracocuketkinlikler.com",
       "iconType": "web",
       "colorTheme": "indigo",
-      "clicks": 0
+      "clicks": 1
     },
     {
       "id": "link-2",
