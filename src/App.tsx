@@ -253,7 +253,10 @@ export default function App() {
         setProfilesList(fetchedProfiles);
 
         // 2. Determine active profile ID
-        const urlProfile = getQueryParam('profile');
+        const pathname = window.location.pathname;
+        const isPublicPath = pathname.startsWith('/p/');
+        const profileIdFromPath = isPublicPath ? pathname.substring(3) : null;
+        const urlProfile = profileIdFromPath || getQueryParam('profile');
         let activeId = 'ankara-cocuk-rehberi';
         if (urlProfile && fetchedProfiles.some(p => p.id === urlProfile)) {
           activeId = urlProfile;
@@ -555,7 +558,7 @@ export default function App() {
     const domain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'https://linklerimiz.vercel.app'
       : window.location.origin;
-    return `${domain}/?profile=${currentProfileId}&view=public`;
+    return `${domain}/p/${currentProfileId}`;
   };
 
   // Copy Profile URL helper
