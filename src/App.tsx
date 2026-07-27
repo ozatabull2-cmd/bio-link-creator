@@ -34,13 +34,23 @@ import {
   MessageSquare
 } from 'lucide-react';
 
+// Google Play Store Icon Component
+const PlayStoreIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M3.25 3.12891C3.25 2.67969 3.39258 2.32983 3.60858 2.11475L13.79 12.2961L3.60858 22.4775C3.39258 22.2624 3.25 21.9126 3.25 21.4633V3.12891Z" fill="#EA4335"/>
+    <path d="M17.1802 15.6865L13.79 12.2963L17.1802 8.90614L21.2752 11.2346C22.4192 11.8856 22.4192 12.9468 21.2752 13.5979L17.1802 15.6865Z" fill="#FBBC05"/>
+    <path d="M3.60858 2.11475C3.93658 1.78675 4.46858 1.84475 5.07258 2.18675L17.1802 8.90614L13.79 12.2963L3.60858 2.11475Z" fill="#34A853"/>
+    <path d="M3.60858 22.4775L13.79 12.2963L17.1802 15.6865L5.07258 22.4059C4.46858 22.7479 3.93658 22.8059 3.60858 22.4775Z" fill="#4285F4"/>
+  </svg>
+);
+
 // Interfaces for our state
 interface LinkItem {
   id: string;
   title: string;
   subtitle: string;
   url: string;
-  iconType: 'web' | 'whatsapp' | 'instagram' | 'youtube' | 'store' | 'tiktok' | 'twitter' | 'discord' | 'telegram';
+  iconType: 'web' | 'whatsapp' | 'instagram' | 'youtube' | 'store' | 'tiktok' | 'twitter' | 'discord' | 'telegram' | 'play';
   colorTheme: 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'indigo' | 'slate';
   clicks: number;
 }
@@ -434,6 +444,8 @@ export default function App() {
         return <Music className={className} />;
       case 'twitter':
         return <Twitter className={className} />;
+      case 'play':
+        return <PlayStoreIcon className={className} />;
       default:
         return <Globe className={className} />;
     }
@@ -816,6 +828,7 @@ export default function App() {
                           <option value="store">Mağaza 🛍️</option>
                           <option value="tiktok">TikTok 🎵</option>
                           <option value="twitter">Twitter / X 🐦</option>
+                          <option value="play">Google Play ▶️</option>
                         </select>
                       </div>
 
@@ -919,6 +932,7 @@ export default function App() {
                                     <option value="store">Mağaza 🛍️</option>
                                     <option value="tiktok">TikTok 🎵</option>
                                     <option value="twitter">Twitter / X 🐦</option>
+                                    <option value="play">Google Play ▶️</option>
                                   </select>
                                 </div>
 
