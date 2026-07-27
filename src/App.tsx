@@ -31,7 +31,8 @@ import {
   ChevronUp,
   ChevronDown,
   ExternalLink,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from 'lucide-react';
 
 // Google Play Store Icon Component
@@ -175,7 +176,8 @@ export default function App() {
   });
 
   // UI Navigation Tabs (Left Control Panel)
-  const [controlTab, setControlTab] = useState<'links' | 'design' | 'ai-helper'>('links');
+  const [controlTab, setControlTab] = useState<'links' | 'design' | 'ai-helper' | 'analytics'>('links');
+  const [analyticsSort, setAnalyticsSort] = useState<'clicks' | 'order'>('clicks');
   
   // New Link Builder State
   const [newTitle, setNewTitle] = useState('');
@@ -359,6 +361,53 @@ export default function App() {
       setApiError('Profil değiştirilemedi.');
     } finally {
       setIsLoadingProfile(false);
+    }
+  };
+
+  const refreshStats = async () => {
+    if (!currentProfileId) return;
+    try {
+      const res = await fetch(`/api/profile/${currentProfileId}`);
+      const data = await res.json();
+      if (data.success && data.profile) {
+        setViewsCount(data.profile.views || 0);
+        setLinks(prevLinks => {
+          return prevLinks.map(prevLnk => {
+            const serverLnk = (data.profile.links || []).find((l: any) => l.id === prevLnk.id);
+            return {
+              ...prevLnk,
+              clicks: serverLnk ? (serverLnk.clicks || 0) : prevLnk.clicks
+            };
+          });
+        });
+      }
+    } catch (e) {
+      console.error("Failed to refresh statistics:", e);
+    }
+  };
+
+  const handleResetStats = async () => {
+    if (!currentProfileId) return;
+    if (!window.confirm("Tüm istatistikleri (görüntülenme ve tıklamalar) sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/reset-stats/${currentProfileId}`, { method: 'POST' });
+      const data = await response.json();
+      if (data.success) {
+        setViewsCount(0);
+        setLinks(prev => prev.map(lnk => ({ ...lnk, clicks: 0 })));
+        alert("İstatistikler başarıyla sıfırlandı.");
+      } else {
+        alert(data.error || "İstatistikler sıfırlanamadı.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("Bir hata oluştu.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1061,7 +1110,7 @@ export default function App() {
         <aside className="w-[360px] h-full bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
           
           {/* Navigation Subtabs inside Sidebar */}
-          <div className="grid grid-cols-3 border-b border-slate-150 p-2 gap-1 bg-slate-50">
+          <div className="grid grid-cols-4 border-b border-slate-150 p-2 gap-1 bg-slate-50">
             <button
               onClick={() => setControlTab('links')}
               className={`py-2 text-[11px] font-bold rounded-lg transition flex flex-col items-center gap-1 ${
@@ -1080,7 +1129,7 @@ export default function App() {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Palette size={14} /> Tasarım & Tema
+              <Palette size={14} /> Tasarım
             </button>
             <button
               onClick={() => setControlTab('ai-helper')}
@@ -1090,7 +1139,20 @@ export default function App() {
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              <Sparkles size={14} className="text-indigo-600" /> AI Önerileri
+              <Sparkles size={14} className="text-indigo-600" /> AI
+            </button>
+            <button
+              onClick={() => {
+                setControlTab('analytics');
+                refreshStats();
+              }}
+              className={`py-2 text-[11px] font-bold rounded-lg transition flex flex-col items-center gap-1 ${
+                controlTab === 'analytics' 
+                  ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <BarChart3 size={14} className={controlTab === 'analytics' ? 'text-indigo-600' : 'text-slate-500'} /> Analiz
             </button>
           </div>
 
@@ -1733,6 +1795,131 @@ export default function App() {
                           <PlusCircle size={13} /> AI Bağlantı Önerilerini Getir
                         </>
                       )}
+                    </button>
+                  </div>
+                </section>
+
+              </div>
+            )}
+
+            {/* TAB 4: ANALYTICS & CLICK REPORTS */}
+            {controlTab === 'analytics' && (
+              <div className="space-y-6 animate-fadeIn">
+                
+                {/* Header with manual refresh */}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-extrabold text-indigo-600 flex items-center gap-1.5 uppercase tracking-wider">
+                    <BarChart3 size={13} /> Analiz & İstatistik
+                  </h3>
+                  <button 
+                    onClick={refreshStats}
+                    className="p-1 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
+                    title="İstatistikleri Güncelle"
+                  >
+                    <RefreshCw size={10} /> YENİLE
+                  </button>
+                </div>
+
+                {/* Main Stats Grid */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
+                    <span className="text-[9px] text-slate-400 block font-semibold">Görüntülenme</span>
+                    <span className="text-sm font-extrabold text-slate-800">{viewsCount}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
+                    <span className="text-[9px] text-slate-400 block font-semibold">Tıklama</span>
+                    <span className="text-sm font-extrabold text-slate-800">{totalClicksCount}</span>
+                  </div>
+                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
+                    <span className="text-[9px] text-slate-400 block font-semibold">Oran (CTR)</span>
+                    <span className="text-sm font-extrabold text-indigo-600">
+                      {viewsCount > 0 ? ((totalClicksCount / viewsCount) * 100).toFixed(1) : '0.0'}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Detailed breakdown list */}
+                <section className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">Bağlantı Detayları</label>
+                    
+                    {/* Sort Dropdown */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] text-slate-400 font-bold">Sıralama:</span>
+                      <select 
+                        value={analyticsSort}
+                        onChange={(e) => setAnalyticsSort(e.target.value as 'clicks' | 'order')}
+                        className="text-[9px] bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 outline-none font-bold"
+                      >
+                        <option value="clicks">En Çok Tıklanan</option>
+                        <option value="order">Liste Sırası</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {(() => {
+                      const sortedLinks = [...links].sort((a, b) => {
+                        if (analyticsSort === 'clicks') {
+                          return b.clicks - a.clicks;
+                        }
+                        return 0; // Keep current order
+                      });
+
+                      const maxClicks = Math.max(...links.map(l => l.clicks), 1);
+
+                      return sortedLinks.map((link, idx) => {
+                        const linkCtr = viewsCount > 0 ? ((link.clicks / viewsCount) * 100) : 0;
+
+                        return (
+                          <div key={link.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-xl space-y-1.5 hover:border-slate-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[10px] font-extrabold bg-slate-200 text-slate-600 w-4 h-4 rounded-full flex items-center justify-center shrink-0">
+                                  {analyticsSort === 'clicks' ? idx + 1 : links.indexOf(link) + 1}
+                                </span>
+                                <span className="text-xs font-bold text-slate-800 truncate">{link.title}</span>
+                              </div>
+                              <span className="text-[10px] font-extrabold text-indigo-600 whitespace-nowrap">
+                                {link.clicks} tıklama ({linkCtr.toFixed(1)}% CTR)
+                              </span>
+                            </div>
+
+                            {/* Custom progress bar */}
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-indigo-500 rounded-full transition-all duration-500" 
+                                style={{ width: `${Math.min((link.clicks / maxClicks) * 100, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+
+                    {links.length === 0 && (
+                      <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        Henüz hiç bağlantı eklenmemiş.
+                      </p>
+                    )}
+                  </div>
+                </section>
+
+                {/* Reset Stats Box */}
+                <section className="pt-4 border-t border-slate-100">
+                  <div className="p-3.5 bg-rose-50/50 border border-rose-100 rounded-xl flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <h4 className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider">İstatistikleri Sıfırla</h4>
+                      <p className="text-[9px] text-rose-600 leading-normal max-w-[190px]">
+                        Tıklama ve görüntülenme sayılarını tamamen temizler. Bu işlem geri alınamaz.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleResetStats}
+                      disabled={isSaving}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold transition whitespace-nowrap shadow-sm disabled:opacity-50"
+                    >
+                      SIFIRLA
                     </button>
                   </div>
                 </section>

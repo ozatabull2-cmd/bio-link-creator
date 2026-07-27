@@ -261,7 +261,24 @@ app.post('/api/save-profile/:id', (req, res) => {
     const profileData = req.body;
     const profilePath = path.join(profilesDir, `${profileId}.json`);
     
-    fs.writeFileSync(profilePath, JSON.stringify(profileData, null, 2), 'utf-8');
+    // Merge to preserve views and link click counts tracked on the server
+    let mergedData = { ...profileData };
+    if (fs.existsSync(profilePath)) {
+      const existingData = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+      mergedData.views = existingData.views || 0;
+      
+      // Preserve clicks for each link
+      const newLinks = (profileData.links || []).map((lnk: any) => {
+        const existingLnk = (existingData.links || []).find((l: any) => l.id === lnk.id);
+        return {
+          ...lnk,
+          clicks: existingLnk ? (existingLnk.clicks || 0) : (lnk.clicks || 0)
+        };
+      });
+      mergedData.links = newLinks;
+    }
+    
+    fs.writeFileSync(profilePath, JSON.stringify(mergedData, null, 2), 'utf-8');
     
     const registryPath = path.join(profilesDir, 'registry.json');
     let registry = [];
@@ -286,7 +303,7 @@ app.post('/api/save-profile/:id', (req, res) => {
       fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
     }
     
-    return res.json({ success: true });
+    return res.json({ success: true, profile: mergedData });
   } catch (err: any) {
     console.error('Save Profile Error:', err);
     return res.status(500).json({ error: err.message || 'Failed to save profile.' });
@@ -496,6 +513,26 @@ app.post('/api/track-view/:profileId', (req, res) => {
     }
   } catch (err) {
     return res.status(500).json({ error: 'Failed to track view' });
+  }
+});
+
+// POST /api/reset-stats/:profileId - Reset views and click counts for a profile
+app.post('/api/reset-stats/:profileId', (req, res) => {
+  try {
+    ensureProfilesSetup();
+    const { profileId } = req.params;
+    const profilePath = path.join(profilesDir, `${profileId}.json`);
+    if (fs.existsSync(profilePath)) {
+      const data = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+      data.views = 0;
+      data.links = (data.links || []).map((lnk: any) => ({ ...lnk, clicks: 0 }));
+      fs.writeFileSync(profilePath, JSON.stringify(data, null, 2), 'utf-8');
+      return res.json({ success: true, profile: data });
+    } else {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to reset stats' });
   }
 });
 
