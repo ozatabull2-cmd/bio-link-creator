@@ -597,7 +597,7 @@ export default function App() {
 
           {/* Fine credit line */}
           <div className="mt-10 text-[10px] text-slate-400 font-bold tracking-wider uppercase">
-            Powered by Bio-Link
+            Powered by Ankara Çocuk Etkinlikler
           </div>
 
         </div>
@@ -1501,7 +1501,7 @@ export default function App() {
 
                   {/* Fine credit line */}
                   <div className="mt-8 text-[9px] text-slate-400 font-bold tracking-wider uppercase">
-                    Powered by Bio-Link
+                    Powered by Ankara Çocuk Etkinlikler
                   </div>
 
                 </div>
