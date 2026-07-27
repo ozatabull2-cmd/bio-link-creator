@@ -146,8 +146,13 @@ const THEME_PRESETS: ThemePreset[] = [
 
 export default function App() {
   // --- STATE ---
-  // Safe extraction of default profile details to handle any ES6 default wrapper differences across builders
   const profileData = defaultProfile && (defaultProfile as any).default ? (defaultProfile as any).default : defaultProfile;
+
+  const [profilesList, setProfilesList] = useState<{ id: string; title: string }[]>([]);
+  const [currentProfileId, setCurrentProfileId] = useState<string>('ankara-cocuk-rehberi');
+  const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newProfileTitle, setNewProfileTitle] = useState('');
 
   const [profileTitle, setProfileTitle] = useState<string>(profileData?.profileTitle || 'Ankara Çocuk Rehberi');
   const [profileBio, setProfileBio] = useState<string>(profileData?.profileBio || "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada! ✨");
@@ -193,7 +198,7 @@ export default function App() {
   ]);
 
   // Interactive UI Simulation States
-  const [viewsCount, setViewsCount] = useState<number>(1284);
+  const [viewsCount, setViewsCount] = useState<number>(0);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   
@@ -204,6 +209,288 @@ export default function App() {
   const [nicheCategory, setNicheCategory] = useState<string>('Aile & Çocuk Rehberi');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Slugify helper
+  const slugify = (text: string) => {
+    const trMap: Record<string, string> = {
+      'ç': 'c', 'Ç': 'c', 'ğ': 'g', 'Ğ': 'g', 'ı': 'i', 'I': 'i', 'İ': 'i',
+      'ö': 'o', 'Ö': 'o', 'ş': 's', 'Ş': 's', 'ü': 'u', 'Ü': 'u'
+    };
+    let str = text;
+    for (const key in trMap) {
+      str = str.replace(new RegExp(key, 'g'), trMap[key]);
+    }
+    return str
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  // Helper to extract query parameters
+  const getQueryParam = (name: string) => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
+  };
+
+  // Fetch list of profiles and active profile on mount / query param change
+  useEffect(() => {
+    const initApp = async () => {
+      setIsLoadingProfile(true);
+      try {
+        // 1. Fetch profiles list
+        let fetchedProfiles: { id: string; title: string }[] = [];
+        try {
+          const res = await fetch('/api/profiles');
+          const data = await res.json();
+          if (data.success) {
+            fetchedProfiles = data.profiles;
+          }
+        } catch (e) {
+          const res = await fetch('/profiles/registry.json');
+          fetchedProfiles = await res.json();
+        }
+        setProfilesList(fetchedProfiles);
+
+        // 2. Determine active profile ID
+        const urlProfile = getQueryParam('profile');
+        let activeId = 'ankara-cocuk-rehberi';
+        if (urlProfile && fetchedProfiles.some(p => p.id === urlProfile)) {
+          activeId = urlProfile;
+        } else if (fetchedProfiles.length > 0) {
+          activeId = fetchedProfiles[0].id;
+        }
+        setCurrentProfileId(activeId);
+
+        // 3. Load active profile details
+        let activeProfileData: any = null;
+        try {
+          const res = await fetch(`/api/profile/${activeId}`);
+          const data = await res.json();
+          if (data.success) {
+            activeProfileData = data.profile;
+          }
+        } catch (e) {
+          const res = await fetch(`/profiles/${activeId}.json`);
+          activeProfileData = await res.json();
+        }
+
+        // Apply profile data to state
+        if (activeProfileData) {
+          setProfileTitle(activeProfileData.profileTitle || '');
+          setProfileBio(activeProfileData.profileBio || '');
+          setSelectedAvatar(activeProfileData.selectedAvatar || '🧒');
+          setSelectedAvatarBg(activeProfileData.selectedAvatarBg || 'from-amber-200 to-orange-400');
+          setAvatarType((activeProfileData.avatarType as 'emoji' | 'image') || 'emoji');
+          setAvatarUrl(activeProfileData.avatarUrl || '');
+          setActiveThemeId(activeProfileData.activeThemeId || 'slate_light');
+          setLinks(activeProfileData.links || []);
+          setSocials(activeProfileData.socials || { instagram: '', whatsapp: '', youtube: '', twitter: '' });
+          setViewsCount(activeProfileData.views || 0);
+        }
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        setApiError('Profil yüklenirken bir hata oluştu.');
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    initApp();
+  }, []);
+
+  // Increment view count when in public view mode
+  useEffect(() => {
+    const isPublic = window.location.search.includes('view=public') || 
+                     (!window.location.search.includes('edit=true') && window.location.hostname !== 'localhost');
+    if (isPublic && currentProfileId && !isLoadingProfile) {
+      fetch(`/api/track-view/${currentProfileId}`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setViewsCount(data.views);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [currentProfileId, isLoadingProfile]);
+
+  const handleSwitchProfile = async (profileId: string) => {
+    setIsLoadingProfile(true);
+    setApiError(null);
+    try {
+      let activeProfileData: any = null;
+      try {
+        const res = await fetch(`/api/profile/${profileId}`);
+        const data = await res.json();
+        if (data.success) {
+          activeProfileData = data.profile;
+        }
+      } catch (e) {
+        const res = await fetch(`/profiles/${profileId}.json`);
+        activeProfileData = await res.json();
+      }
+
+      if (activeProfileData) {
+        setCurrentProfileId(profileId);
+        setProfileTitle(activeProfileData.profileTitle || '');
+        setProfileBio(activeProfileData.profileBio || '');
+        setSelectedAvatar(activeProfileData.selectedAvatar || '🧒');
+        setSelectedAvatarBg(activeProfileData.selectedAvatarBg || 'from-amber-200 to-orange-400');
+        setAvatarType((activeProfileData.avatarType as 'emoji' | 'image') || 'emoji');
+        setAvatarUrl(activeProfileData.avatarUrl || '');
+        setActiveThemeId(activeProfileData.activeThemeId || 'slate_light');
+        setLinks(activeProfileData.links || []);
+        setSocials(activeProfileData.socials || { instagram: '', whatsapp: '', youtube: '', twitter: '' });
+        setViewsCount(activeProfileData.views || 0);
+        
+        // Update URL
+        const params = new URLSearchParams(window.location.search);
+        params.set('profile', profileId);
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({}, '', newUrl);
+      }
+    } catch (err) {
+      console.error('Error switching profile:', err);
+      setApiError('Profil değiştirilemedi.');
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  const handleCreateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProfileTitle.trim()) {
+      alert('Lütfen bir profil adı girin.');
+      return;
+    }
+    const slugId = slugify(newProfileTitle);
+    if (!slugId) {
+      alert('Geçersiz profil adı.');
+      return;
+    }
+    
+    setIsSaving(true);
+    setApiError(null);
+    try {
+      const response = await fetch('/api/create-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: slugId,
+          title: newProfileTitle.trim()
+        })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Profil oluşturulamadı.');
+      }
+      
+      setProfilesList(prev => [...prev, { id: slugId, title: newProfileTitle.trim() }]);
+      setIsCreateModalOpen(false);
+      setNewProfileTitle('');
+      await handleSwitchProfile(slugId);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Profil oluşturulamadı.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (currentProfileId === 'ankara-cocuk-rehberi') {
+      alert('Varsayılan profil silinemez.');
+      return;
+    }
+    if (!confirm(`"${profileTitle}" profilini tamamen silmek istediğinize emin misiniz?`)) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/profile/${currentProfileId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Profil silinemedi.');
+      }
+      
+      const remainingProfiles = profilesList.filter(p => p.id !== currentProfileId);
+      setProfilesList(remainingProfiles);
+      if (remainingProfiles.length > 0) {
+        await handleSwitchProfile(remainingProfiles[0].id);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Profil silinemedi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [renameProfileTitle, setRenameProfileTitle] = useState('');
+  const [renameProfileSlug, setRenameProfileSlug] = useState('');
+
+  const handleOpenRenameModal = () => {
+    setRenameProfileTitle(profileTitle);
+    setRenameProfileSlug(currentProfileId);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleRenameProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renameProfileTitle.trim()) {
+      alert('Lütfen geçerli bir başlık girin.');
+      return;
+    }
+    const cleanSlug = slugify(renameProfileSlug);
+    if (!cleanSlug) {
+      alert('Geçersiz profil linki.');
+      return;
+    }
+
+    setIsSaving(true);
+    setApiError(null);
+    try {
+      const response = await fetch(`/api/rename-profile/${currentProfileId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newId: cleanSlug,
+          newTitle: renameProfileTitle.trim()
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Profil ismi değiştirilemedi.');
+      }
+
+      setProfilesList(prev => prev.map(p => {
+        if (p.id === currentProfileId) {
+          return { id: cleanSlug, title: renameProfileTitle.trim() };
+        }
+        return p;
+      }));
+
+      setProfileTitle(renameProfileTitle.trim());
+      setCurrentProfileId(cleanSlug);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set('profile', cleanSlug);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.pushState({}, '', newUrl);
+
+      setIsRenameModalOpen(false);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Profil ismi değiştirilemedi.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const activeTheme = THEME_PRESETS.find(t => t.id === activeThemeId) || THEME_PRESETS[0];
 
@@ -263,9 +550,17 @@ export default function App() {
     setLinks(reordered);
   };
 
+  // Resolve public url dynamically, defaulting to the production Vercel domain if run locally
+  const getPublicUrl = () => {
+    const domain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'https://linklerimiz.vercel.app'
+      : window.location.origin;
+    return `${domain}/?profile=${currentProfileId}&view=public`;
+  };
+
   // Copy Profile URL helper
   const handleCopyProfileUrl = () => {
-    const url = `https://link.bio/ankara-cocuk`;
+    const url = getPublicUrl();
     navigator.clipboard.writeText(url);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -278,7 +573,7 @@ export default function App() {
     setIsSaving(true);
     setApiError(null);
     try {
-      const response = await fetch('/api/save-profile', {
+      const response = await fetch(`/api/save-profile/${currentProfileId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -290,7 +585,8 @@ export default function App() {
           avatarUrl,
           activeThemeId,
           links,
-          socials
+          socials,
+          views: viewsCount
         })
       });
 
@@ -300,6 +596,14 @@ export default function App() {
       }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
+
+      // Update registry locally
+      setProfilesList(prev => prev.map(p => {
+        if (p.id === currentProfileId) {
+          return { ...p, title: profileTitle };
+        }
+        return p;
+      }));
     } catch (err: any) {
       console.error(err);
       setApiError(err.message || 'Değişiklikler kaydedilemedi.');
@@ -492,6 +796,15 @@ export default function App() {
     }
   };
 
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-200">
+        <RefreshCw className="w-10 h-10 animate-spin text-indigo-500 mb-4" />
+        <p className="text-sm font-bold text-slate-400">Profil yükleniyor...</p>
+      </div>
+    );
+  }
+
   // Check if we are in public view mode or edit mode
   // If ?edit=true or running locally without ?view=public, we show the admin panel.
   const isEditMode = window.location.search.includes('edit=true') || (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'));
@@ -543,7 +856,15 @@ export default function App() {
                   rel="noreferrer"
                   onClick={() => {
                     try {
-                      fetch(`/api/track-click/${link.id}`, { method: 'POST' }).catch(() => {});
+                      fetch(`/api/track-click/${currentProfileId}/${link.id}`, { method: 'POST' }).catch(() => {});
+                      // Dynamic import to safely track custom link clicks on Vercel
+                      import('@vercel/analytics').then(({ track }) => {
+                        track('Link Click', {
+                          profile: currentProfileId,
+                          linkTitle: link.title,
+                          url: link.url
+                        });
+                      }).catch(() => {});
                     } catch(e){}
                   }}
                   className={`w-full p-4 border rounded-2xl flex items-center gap-3.5 transition-all duration-300 ${colorStyle.bg} shadow-sm hover:scale-[1.015] hover:-translate-y-0.5`}
@@ -626,8 +947,49 @@ export default function App() {
           </div>
         </div>
 
-        {/* Global Save Action Trigger */}
+        {/* Profile Switcher & Actions */}
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-1.5 shadow-xs mr-2">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktif Profil:</span>
+            <select
+              value={currentProfileId}
+              onChange={(e) => handleSwitchProfile(e.target.value)}
+              className="bg-transparent border-none text-xs font-bold text-slate-800 outline-none cursor-pointer focus:ring-0 py-0 pr-6 pl-0"
+            >
+              {profilesList.map(profile => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.title}
+                </option>
+              ))}
+            </select>
+            
+            <span className="w-[1px] h-4 bg-slate-200" />
+            
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100/50 rounded-lg transition cursor-pointer"
+              title="Yeni Profil Ekle"
+            >
+              <Plus size={15} />
+            </button>
+            <button
+              onClick={handleOpenRenameModal}
+              className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-slate-100/50 rounded-lg transition cursor-pointer"
+              title="Profili Yeniden Adlandır"
+            >
+              <Edit3 size={15} />
+            </button>
+            {currentProfileId !== 'ankara-cocuk-rehberi' && (
+              <button
+                onClick={handleDeleteProfile}
+                className="p-1 text-slate-400 hover:text-red-500 hover:bg-slate-100/50 rounded-lg transition cursor-pointer"
+                title="Profili Sil"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
+
           {saveSuccess && (
             <span className="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
               <Check size={14} /> Değişiklikler Kaydedildi!
@@ -1703,11 +2065,11 @@ export default function App() {
                 {/* Copy visual bar */}
                 <div className="flex items-center gap-1.5 p-2 bg-slate-50 border border-slate-100 rounded-xl">
                   <span className="text-[11px] font-mono text-slate-500 truncate flex-1 pl-2 text-left">
-                    https://link.bio/ankara-cocuk
+                    {getPublicUrl()}
                   </span>
                   <button 
                     onClick={handleCopyProfileUrl}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-extrabold transition shrink-0 shadow-sm"
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[10px] font-extrabold transition shrink-0 shadow-sm cursor-pointer"
                   >
                     {isCopied ? 'Kopyalandı!' : 'Kopyala'}
                   </button>
@@ -1716,12 +2078,127 @@ export default function App() {
                 <div className="pt-2">
                   <button 
                     onClick={() => setIsShareModalOpen(false)}
-                    className="w-full py-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold transition shadow-sm"
+                    className="w-full py-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
                   >
                     Kapat
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Create Profile Modal */}
+      <AnimatePresence>
+        {isCreateModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 flex flex-col gap-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900">Yeni Profil Oluştur</h3>
+                <button
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setNewProfileTitle('');
+                  }}
+                  className="text-slate-400 hover:text-slate-650 transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <form onSubmit={handleCreateProfile} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">Profil Başlığı</label>
+                  <input
+                    type="text"
+                    value={newProfileTitle}
+                    onChange={(e) => setNewProfileTitle(e.target.value)}
+                    placeholder="Örn: Ankarada Ne Yaşıyor"
+                    className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSaving || !newProfileTitle.trim()}
+                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold transition hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isSaving ? <RefreshCw size={13} className="animate-spin" /> : <Plus size={14} />}
+                  Oluştur
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Rename Profile Modal */}
+      <AnimatePresence>
+        {isRenameModalOpen && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 flex flex-col gap-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900">Profili Yeniden Adlandır</h3>
+                <button
+                  onClick={() => setIsRenameModalOpen(false)}
+                  className="text-slate-400 hover:text-slate-650 transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleRenameProfile} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">Profil Başlığı (Görünen İsim)</label>
+                  <input
+                    type="text"
+                    value={renameProfileTitle}
+                    onChange={(e) => setRenameProfileTitle(e.target.value)}
+                    placeholder="Örn: Ankara Çocuk Rehberi Yeni"
+                    className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+                
+                {currentProfileId !== 'ankara-cocuk-rehberi' ? (
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">Profil Linki / ID (URL Slug)</label>
+                    <input
+                      type="text"
+                      value={renameProfileSlug}
+                      onChange={(e) => setRenameProfileSlug(e.target.value)}
+                      placeholder="ankara-cocuk-rehberi-yeni"
+                      className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none font-mono"
+                    />
+                    <span className="text-[10px] text-amber-500 font-bold mt-1 block">
+                      ⚠️ Uyarı: Link kimliğini değiştirmek, daha önce paylaştığınız linkleri geçersiz kılar!
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-150 text-[11px] text-slate-500 leading-normal">
+                    💡 Varsayılan profilin URL link kimliği (`ankara-cocuk-rehberi`) değiştirilemez, ancak görünen başlığını dilediğiniz gibi değiştirebilirsiniz.
+                  </div>
+                )}
+                
+                <button
+                  type="submit"
+                  disabled={isSaving || !renameProfileTitle.trim() || !renameProfileSlug.trim()}
+                  className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold transition hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {isSaving ? <RefreshCw size={13} className="animate-spin" /> : <Check size={14} />}
+                  Değişiklikleri Kaydet
+                </button>
+              </form>
             </motion.div>
           </div>
         )}

@@ -24,5 +24,17 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "public"
+  ],
+  "watchOptions": {
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/dist",
+      "**/public"
+    ]
   }
 }

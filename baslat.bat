@@ -17,6 +17,6 @@ if not exist node_modules (
 )
 
 :: Sunucuyu baslat (Path'teki '&' isaretinden dolayi olusan Windows hatasini 
-:: engellemek icin npm run dev yerine dogrudan node ile baslatiyoruz)
-node "%~dp0node_modules\tsx\dist\cli.mjs" "%~dp0server.ts"
+:: engellemek icin relative path ve node --import kullanarak baslatiyoruz)
+node --import tsx server.ts
 pause
