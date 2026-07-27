@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
+import os from 'os';
 
 // Load environment variables
 dotenv.config();
@@ -222,6 +223,30 @@ function ensureProfilesSetup() {
     }
   }
 }
+
+// GET /api/server-info - get server local IP addresses
+app.get('/api/server-info', (req, res) => {
+  try {
+    const nets = os.networkInterfaces();
+    const results: string[] = [];
+    
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name] || []) {
+        if (net.family === 'IPv4' && !net.internal) {
+          results.push(net.address);
+        }
+      }
+    }
+    
+    return res.json({
+      success: true,
+      localIps: results,
+      port: 3000
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message || 'Failed to retrieve server info.' });
+  }
+});
 
 // GET /api/profiles - list all profiles
 app.get('/api/profiles', (req, res) => {

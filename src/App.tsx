@@ -202,6 +202,7 @@ export default function App() {
 
   // Interactive UI Simulation States
   const [viewsCount, setViewsCount] = useState<number>(0);
+  const [localIps, setLocalIps] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   
@@ -254,6 +255,17 @@ export default function App() {
           fetchedProfiles = await res.json();
         }
         setProfilesList(fetchedProfiles);
+
+        // Fetch server local IP addresses for phone testing
+        try {
+          const res = await fetch('/api/server-info');
+          const data = await res.json();
+          if (data.success && data.localIps) {
+            setLocalIps(data.localIps);
+          }
+        } catch (e) {
+          console.log("Could not load server-info:", e);
+        }
 
         // 2. Determine active profile ID
         const pathname = window.location.pathname;
@@ -1837,6 +1849,48 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+
+                {/* Telefondan Test Et (Local Only) */}
+                {(() => {
+                  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                  const localIp = localIps.length > 0 ? localIps[0] : null;
+                  const localTestUrl = localIp ? `http://${localIp}:3000/p/${currentProfileId}` : null;
+                  
+                  if (!isLocal || !localTestUrl) return null;
+                  
+                  return (
+                    <section className="p-4 bg-indigo-50/55 border border-indigo-100 rounded-xl space-y-3">
+                      <h4 className="text-[10px] font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-1">
+                        <ExternalLink size={12} /> Telefondan Test Edin
+                      </h4>
+                      <p className="text-[10px] text-slate-500 leading-normal">
+                        Telefonunuzdan linklere tıklayarak test etmek için aşağıdaki QR kodu taratın veya adrese gidin. 
+                        <span className="font-bold text-indigo-750 block mt-1">⚠️ Önemli: Telefonunuz ve bilgisayarınız aynı Wi-Fi ağına bağlı olmalıdır.</span>
+                      </p>
+                      
+                      <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-slate-150">
+                        <div className="bg-slate-50 p-1 rounded border border-slate-200 shrink-0">
+                          <img 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(localTestUrl)}`} 
+                            alt="Local QR Code"
+                            className="w-[90px] h-[90px]"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <span className="text-[9px] text-slate-400 block font-semibold">Yerel Test Adresi:</span>
+                          <a 
+                            href={localTestUrl} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-[10px] font-mono font-bold text-indigo-650 hover:underline break-all block"
+                          >
+                            {localTestUrl}
+                          </a>
+                        </div>
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 {/* Detailed breakdown list */}
                 <section className="space-y-3 pt-2">
