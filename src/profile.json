@@ -33,6 +33,15 @@
       "iconType": "store",
       "colorTheme": "blue",
       "clicks": 0
+    },
+    {
+      "id": "link-4",
+      "title": "Tanıtım - İşbirliği",
+      "subtitle": "Tanıtım ve işbirliği detayları",
+      "url": "https://ankara-cocuk-landing.vercel.app/",
+      "iconType": "web",
+      "colorTheme": "violet",
+      "clicks": 0
     }
   ],
   "socials": {
