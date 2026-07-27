@@ -1,0 +1,27 @@
+{
+  "profileTitle": "Ankara Çocuk Rehberiii",
+  "profileBio": "✨ Yeni Ankara Çocuk Rehberiii biyografisi buraya!",
+  "selectedAvatar": "👤",
+  "selectedAvatarBg": "from-blue-200 to-indigo-400",
+  "avatarType": "emoji",
+  "avatarUrl": "",
+  "activeThemeId": "slate_light",
+  "links": [
+    {
+      "id": "link-1785142761125",
+      "title": "Ücretsiz Yaz Tatili Etkinlikleri - Yaz Kursları",
+      "subtitle": "Etkinlikleri toplu halde görün",
+      "url": "https://ankaracocuketkinlikler.com",
+      "iconType": "web",
+      "colorTheme": "indigo",
+      "clicks": 0
+    }
+  ],
+  "socials": {
+    "instagram": "",
+    "whatsapp": "",
+    "youtube": "",
+    "twitter": ""
+  },
+  "views": 0
+}

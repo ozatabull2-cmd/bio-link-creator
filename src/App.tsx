@@ -810,6 +810,27 @@ export default function App() {
   const isEditMode = window.location.search.includes('edit=true') || (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'));
 
   if (!isEditMode) {
+    if (apiError) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-slate-200 p-6">
+          <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-3xl max-w-sm w-full text-center space-y-4 shadow-xl">
+            <AlertCircle className="w-12 h-12 text-rose-500 mx-auto animate-bounce" />
+            <h2 className="text-md font-extrabold">Profil Yayınlanmadı</h2>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              "{currentProfileId}" isimli profil dosyası sunucuda henüz bulunamadı.
+            </p>
+            <div className="bg-slate-950/40 p-4 rounded-xl text-left space-y-2">
+              <span className="text-[9px] text-indigo-400 font-bold block uppercase tracking-wider">Nasıl Yayınlanır?</span>
+              <p className="text-[11px] text-slate-300 leading-relaxed">
+                1. Bilgisayarınızda **guncelle.bat** dosyasını çalıştırın.<br/>
+                2. İşlem bittikten 15-20 saniye sonra bu sayfayı yenileyin.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className={`min-h-screen w-full relative flex flex-col items-center overflow-x-hidden ${activeTheme.bgClass}`}>
         {/* Background gradient from the theme */}
