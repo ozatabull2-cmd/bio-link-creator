@@ -310,7 +310,8 @@ app.post('/api/save-profile', (req, res) => {
 app.post('/api/create-profile', (req, res) => {
   try {
     ensureProfilesSetup();
-    const { id, title } = req.body;
+    const { id, title, cloneFrom } = req.body;
+    console.log('[DEBUG] Create Profile Request received:', { id, title, cloneFrom });
     if (!id || !title) {
       return res.status(400).json({ error: 'Profile ID and Title are required.' });
     }
@@ -319,17 +320,34 @@ app.post('/api/create-profile', (req, res) => {
       return res.status(400).json({ error: 'Profile already exists.' });
     }
     
-    const newProfile = {
-      profileTitle: title,
-      profileBio: `✨ Yeni ${title} biyografisi buraya!`,
-      selectedAvatar: "👤",
-      selectedAvatarBg: "from-blue-200 to-indigo-400",
-      avatarType: "emoji",
-      avatarUrl: "",
-      activeThemeId: "slate_light",
-      links: [],
-      socials: { instagram: "", whatsapp: "", youtube: "", twitter: "" }
-    };
+    let newProfile: any = null;
+    
+    if (cloneFrom) {
+      const sourcePath = path.join(profilesDir, `${cloneFrom}.json`);
+      console.log('[DEBUG] Attempting to clone from:', sourcePath);
+      if (fs.existsSync(sourcePath)) {
+        console.log('[DEBUG] Source file found. Cloning...');
+        const sourceData = JSON.parse(fs.readFileSync(sourcePath, 'utf-8'));
+        newProfile = {
+          ...sourceData,
+          profileTitle: title // Override display title
+        };
+      }
+    }
+    
+    if (!newProfile) {
+      newProfile = {
+        profileTitle: title,
+        profileBio: `✨ Yeni ${title} biyografisi buraya!`,
+        selectedAvatar: "👤",
+        selectedAvatarBg: "from-blue-200 to-indigo-400",
+        avatarType: "emoji",
+        avatarUrl: "",
+        activeThemeId: "slate_light",
+        links: [],
+        socials: { instagram: "", whatsapp: "", youtube: "", twitter: "" }
+      };
+    }
     
     fs.writeFileSync(profilePath, JSON.stringify(newProfile, null, 2), 'utf-8');
     

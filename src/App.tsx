@@ -153,6 +153,7 @@ export default function App() {
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProfileTitle, setNewProfileTitle] = useState('');
+  const [cloneSourceProfile, setCloneSourceProfile] = useState('');
 
   const [profileTitle, setProfileTitle] = useState<string>(profileData?.profileTitle || 'Ankara Çocuk Rehberi');
   const [profileBio, setProfileBio] = useState<string>(profileData?.profileBio || "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada! ✨");
@@ -381,7 +382,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: slugId,
-          title: newProfileTitle.trim()
+          title: newProfileTitle.trim(),
+          cloneFrom: cloneSourceProfile || undefined
         })
       });
       const data = await response.json();
@@ -392,6 +394,7 @@ export default function App() {
       setProfilesList(prev => [...prev, { id: slugId, title: newProfileTitle.trim() }]);
       setIsCreateModalOpen(false);
       setNewProfileTitle('');
+      setCloneSourceProfile('');
       await handleSwitchProfile(slugId);
     } catch (err: any) {
       console.error(err);
@@ -2129,8 +2132,9 @@ export default function App() {
                   onClick={() => {
                     setIsCreateModalOpen(false);
                     setNewProfileTitle('');
+                    setCloneSourceProfile('');
                   }}
-                  className="text-slate-400 hover:text-slate-650 transition cursor-pointer"
+                  className="text-slate-400 hover:text-slate-655 transition cursor-pointer"
                 >
                   <X size={18} />
                 </button>
@@ -2146,6 +2150,19 @@ export default function App() {
                     className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none"
                     autoFocus
                   />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 block mb-1.5 uppercase">Klonlanacak Profil (İsteğe Bağlı)</label>
+                  <select
+                    value={cloneSourceProfile}
+                    onChange={(e) => setCloneSourceProfile(e.target.value)}
+                    className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white text-slate-700"
+                  >
+                    <option value="">-- Boş Şablon (Yeni) --</option>
+                    {profilesList.map((p) => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
                 </div>
                 <button
                   type="submit"
