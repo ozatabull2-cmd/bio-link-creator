@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import defaultProfile from './profile.json';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -52,16 +52,11 @@ interface LinkItem {
   subtitle: string;
   url: string;
   iconType: 'web' | 'whatsapp' | 'instagram' | 'youtube' | 'store' | 'tiktok' | 'twitter' | 'discord' | 'telegram' | 'play';
-  colorTheme: 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'indigo' | 'slate';
+  colorTheme: 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'indigo' | 'slate' | 'white';
   clicks: number;
 }
 
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+
 
 // Design theme presets
 interface ThemePreset {
@@ -145,11 +140,65 @@ const THEME_PRESETS: ThemePreset[] = [
   }
 ];
 
+// Framer Motion Animation Variants for Modern aesthetics
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.15
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { y: 20, opacity: 0 },
+  show: { 
+    y: 0, 
+    opacity: 1, 
+    transition: { 
+      type: "spring", 
+      stiffness: 80, 
+      damping: 15 
+    } 
+  }
+};
+
+const linkVariants = {
+  hidden: { y: 25, opacity: 0 },
+  show: { 
+    y: 0, 
+    opacity: 1, 
+    transition: { 
+      type: "spring", 
+      stiffness: 70, 
+      damping: 14 
+    } 
+  }
+};
+
+const socialVariants = {
+  hidden: { scale: 0.8, opacity: 0 },
+  show: { 
+    scale: 1, 
+    opacity: 1, 
+    transition: { 
+      type: "spring", 
+      stiffness: 100, 
+      delay: 0.5 
+    } 
+  }
+};
+
 export default function App() {
   // --- STATE ---
   const profileData = defaultProfile && (defaultProfile as any).default ? (defaultProfile as any).default : defaultProfile;
 
   const [profilesList, setProfilesList] = useState<{ id: string; title: string }[]>([]);
+  const lastTrackedUrlRef = useRef<string>(
+    typeof window !== 'undefined' ? window.location.pathname + window.location.search : ''
+  );
   const [currentProfileId, setCurrentProfileId] = useState<string>('ankara-cocuk-rehberi');
   const [isLoadingProfile, setIsLoadingProfile] = useState<boolean>(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -176,8 +225,7 @@ export default function App() {
   });
 
   // UI Navigation Tabs (Left Control Panel)
-  const [controlTab, setControlTab] = useState<'links' | 'design' | 'ai-helper' | 'analytics'>('links');
-  const [analyticsSort, setAnalyticsSort] = useState<'clicks' | 'order'>('clicks');
+  const [controlTab, setControlTab] = useState<'links' | 'design'>('links');
   
   // New Link Builder State
   const [newTitle, setNewTitle] = useState('');
@@ -188,30 +236,11 @@ export default function App() {
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [editingLinkData, setEditingLinkData] = useState<LinkItem | null>(null);
 
-  // Copilot Chat States
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(true);
-  const [chatInput, setChatInput] = useState<string>('');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-init',
-      role: 'assistant',
-      content: 'Merhaba! Ben Linktree & Bio-Link büyüme asistanınızım. 📈\n\nProfilinizin tıklanma oranını artırmak, bağlantı başlıklarınızı daha ilgi çekici hale getirmek veya takipçilerinizi harekete geçirecek biyografiler yazmak için buradayım. Bana dilediğinizi sorabilirsiniz!',
-      timestamp: new Date()
-    }
-  ]);
-
   // Interactive UI Simulation States
   const [viewsCount, setViewsCount] = useState<number>(0);
   const [localIps, setLocalIps] = useState<string[]>([]);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
-  
-  // AI Generation States
-  const [isBioLoading, setIsBioLoading] = useState<boolean>(false);
-  const [bioTone, setBioTone] = useState<string>('Sıcak ve Eğlenceli');
-  const [isLinksLoading, setIsLinksLoading] = useState<boolean>(false);
-  const [nicheCategory, setNicheCategory] = useState<string>('Aile & Çocuk Rehberi');
-  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   // Slugify helper
@@ -330,6 +359,19 @@ export default function App() {
           }
         })
         .catch(() => {});
+
+      // Track pageview hit in Yandex.Metrika for SPA navigation, avoiding duplicate views
+      if (typeof window !== 'undefined' && (window as any).ym) {
+        try {
+          const currentUrl = window.location.pathname + window.location.search;
+          if (currentUrl !== lastTrackedUrlRef.current) {
+            (window as any).ym(111103961, 'hit', currentUrl);
+            lastTrackedUrlRef.current = currentUrl;
+          }
+        } catch (e) {
+          console.warn('Yandex.Metrika pageview tracking error:', e);
+        }
+      }
     }
   }, [currentProfileId, isLoadingProfile]);
 
@@ -679,126 +721,7 @@ export default function App() {
     }
   };
 
-  // AI API Integration: Generate Bio
-  const generateAIBio = async () => {
-    setIsBioLoading(true);
-    setApiError(null);
-    try {
-      const response = await fetch('/api/generate-bio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: profileTitle,
-          currentBio: profileBio,
-          tone: bioTone
-        })
-      });
 
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Biyografi üretilirken hata oluştu.');
-      }
-      setProfileBio(data.bio);
-    } catch (err: any) {
-      console.error(err);
-      setApiError(err.message || 'Yapay zeka servisine bağlanılamadı.');
-    } finally {
-      setIsBioLoading(false);
-    }
-  };
-
-  // AI API Integration: Suggest highly converting Links
-  const suggestAILinks = async () => {
-    setIsLinksLoading(true);
-    setApiError(null);
-    try {
-      const response = await fetch('/api/suggest-links', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: profileTitle,
-          description: profileBio,
-          niche: nicheCategory
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Bağlantı önerileri alınamadı.');
-      }
-
-      // Convert recommended links to state structure
-      const newSuggested: LinkItem[] = data.suggestedLinks.map((item: any, idx: number) => ({
-        id: `link-suggested-${Date.now()}-${idx}`,
-        title: item.title,
-        subtitle: item.subtitle,
-        url: item.url,
-        iconType: item.iconType,
-        colorTheme: item.colorTheme || 'indigo',
-        clicks: 0
-      }));
-
-      setLinks(prev => [...prev, ...newSuggested]);
-    } catch (err: any) {
-      console.error(err);
-      setApiError(err.message || 'Öneriler alınırken hata oluştu.');
-    } finally {
-      setIsLinksLoading(false);
-    }
-  };
-
-  // AI API Integration: Chatbot Copilot
-  const handleSendChatMessage = async (presetText?: string) => {
-    const textToSend = presetText || chatInput;
-    if (!textToSend.trim()) return;
-
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      role: 'user',
-      content: textToSend,
-      timestamp: new Date()
-    };
-
-    setChatMessages(prev => [...prev, userMsg]);
-    if (!presetText) setChatInput('');
-    setIsChatLoading(true);
-    setApiError(null);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [...chatMessages, userMsg],
-          profileData: {
-            title: profileTitle,
-            bio: profileBio,
-            theme: activeTheme.name,
-            links: links
-          }
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Yapay zekadan yanıt alınamadı.');
-      }
-
-      const assistantMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        role: 'assistant',
-        content: data.reply,
-        timestamp: new Date()
-      };
-
-      setChatMessages(prev => [...prev, assistantMsg]);
-    } catch (err: any) {
-      console.error(err);
-      setApiError(err.message || 'Yapay zeka ile iletişim hatası.');
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
 
   // Icon Component Mapper for Link Items
   const renderIcon = (type: LinkItem['iconType'], className = "w-5 h-5") => {
@@ -855,6 +778,11 @@ export default function App() {
           bg: 'bg-indigo-50 hover:bg-indigo-100/70 text-indigo-900 border-indigo-100',
           iconBg: 'bg-indigo-600 text-white'
         };
+      case 'white':
+        return {
+          bg: 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.04)]',
+          iconBg: 'bg-slate-100 text-slate-600'
+        };
       default:
         return {
           bg: 'bg-slate-50 hover:bg-slate-100/80 text-slate-900 border-slate-200',
@@ -904,44 +832,72 @@ export default function App() {
         <div className={`absolute inset-0 bg-gradient-to-b ${activeTheme.phoneBgClass} z-0`} />
         
         {/* Safe layout margin container */}
-        <div className="relative z-10 w-full max-w-md flex-1 flex flex-col items-center px-6 pt-16 pb-20">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="relative z-10 w-full max-w-md flex-1 flex flex-col items-center px-6 pt-12 pb-20 animate-fadeIn"
+        >
+          {/* Glowing blur blobs behind the profile card for a modern depth effect */}
+          <div className="absolute top-10 left-12 w-44 h-44 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none z-0" />
+          <div className="absolute top-36 right-12 w-44 h-44 bg-purple-400/20 rounded-full blur-3xl pointer-events-none z-0" />
           
-          {/* Avatar frame */}
-          <div className="w-24 h-24 rounded-full border-4 border-white shadow-lg mb-4 flex items-center justify-center overflow-hidden shrink-0 bg-slate-200 relative">
-            {avatarType === 'emoji' ? (
-              <div className={`w-full h-full bg-gradient-to-tr ${selectedAvatarBg} flex items-center justify-center text-5xl`}>
-                {selectedAvatar}
-              </div>
-            ) : (
-              <img 
-                src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80'} 
-                alt="Avatar" 
-                className="w-full h-full object-cover" 
-                referrerPolicy="no-referrer"
-              />
-            )}
-          </div>
+          {/* Profile Header Card (Glassmorphism) */}
+          <motion.div 
+            variants={cardVariants}
+            className={`w-full p-6 rounded-[28px] flex flex-col items-center mb-8 relative overflow-hidden z-10 backdrop-blur-md border ${
+              activeTheme.id === 'neon_cyber'
+                ? 'bg-slate-950/50 border-slate-800/80 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
+                : 'bg-white/70 border-white/50 shadow-[0_8px_32px_rgba(15,23,42,0.06)]'
+            }`}
+          >
+            {/* Inner background glow */}
+            <div className="absolute -top-10 -left-10 w-24 h-24 bg-gradient-to-tr from-indigo-200/20 to-purple-200/20 rounded-full blur-xl" />
+            
+            {/* Avatar frame */}
+            <div className={`w-24 h-24 rounded-full border-4 ${activeTheme.id === 'neon_cyber' ? 'border-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.4)]' : 'border-white shadow-[0_8px_20px_rgba(0,0,0,0.08)]'} mb-4 flex items-center justify-center overflow-hidden shrink-0 bg-slate-100 relative z-10 transition-transform duration-500 hover:scale-105`}>
+              {avatarType === 'emoji' ? (
+                <div className={`w-full h-full bg-gradient-to-tr ${selectedAvatarBg} flex items-center justify-center text-5xl`}>
+                  {selectedAvatar}
+                </div>
+              ) : (
+                <img 
+                  src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80'} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover" 
+                  referrerPolicy="no-referrer"
+                />
+              )}
+            </div>
 
-          {/* Profile Title */}
-          <h1 className="text-xl font-extrabold text-slate-800 text-center tracking-tight leading-tight w-full px-2">
-            {profileTitle || 'Profil Başlığı'}
-          </h1>
+            {/* Profile Title */}
+            <h1 className={`text-xl font-extrabold text-center tracking-tight leading-tight w-full px-2 relative z-10 ${
+              activeTheme.id === 'neon_cyber' ? 'text-slate-100' : 'text-slate-800'
+            }`}>
+              {profileTitle || 'Profil Başlığı'}
+            </h1>
 
-          {/* Profile Bio */}
-          <p className="text-xs text-center text-slate-500 mt-2 mb-8 leading-relaxed max-w-xs px-2 break-words">
-            {profileBio || 'Biyografi bilgisi girilmedi.'}
-          </p>
+            {/* Profile Bio */}
+            <p className={`text-xs text-center mt-2.5 leading-relaxed max-w-xs px-2 break-words relative z-10 ${
+              activeTheme.id === 'neon_cyber' ? 'text-slate-400' : 'text-slate-500'
+            }`}>
+              {profileBio || 'Biyografi bilgisi girilmedi.'}
+            </p>
+          </motion.div>
 
           {/* Links List */}
-          <div className="w-full space-y-4 flex-1">
+          <div className="w-full space-y-4 flex-1 z-10">
             {links.map((link) => {
               const colorStyle = getLinkColorStyles(link.colorTheme);
               return (
-                <a
+                <motion.a
                   key={link.id}
                   href={link.url}
                   target="_blank"
                   rel="noreferrer"
+                  variants={linkVariants}
+                  whileHover={{ scale: 1.018, y: -1.5, shadow: "0px 10px 20px rgba(0, 0, 0, 0.08)" }}
+                  whileTap={{ scale: 0.995 }}
                   onClick={() => {
                     try {
                       fetch(`/api/track-click/${currentProfileId}/${link.id}`, { method: 'POST' }).catch(() => {});
@@ -955,7 +911,7 @@ export default function App() {
                       }).catch(() => {});
                     } catch(e){}
                   }}
-                  className={`w-full p-4 border rounded-2xl flex items-center gap-3.5 transition-all duration-300 ${colorStyle.bg} shadow-sm hover:scale-[1.015] hover:-translate-y-0.5`}
+                  className={`w-full p-4 border rounded-[22px] flex items-center gap-3.5 transition-all duration-300 ${colorStyle.bg} shadow-sm`}
                 >
                   <div className={`w-10 h-10 rounded-xl ${colorStyle.iconBg} flex items-center justify-center shrink-0`}>
                     {renderIcon(link.iconType, "w-5 h-5")}
@@ -969,19 +925,25 @@ export default function App() {
                   </div>
                   
                   <ExternalLink size={14} className="text-slate-400 shrink-0" />
-                </a>
+                </motion.a>
               );
             })}
 
             {links.length === 0 && (
-              <div className="text-center py-12 text-slate-400 text-xs">
+              <motion.div 
+                variants={linkVariants}
+                className="text-center py-12 text-slate-400 text-xs"
+              >
                 Bağlantı bulunmamaktadır.
-              </div>
+              </motion.div>
             )}
           </div>
 
           {/* Social Icons */}
-          <div className="flex items-center justify-center gap-5 mt-10 pt-6 border-t border-slate-200/40 w-full z-10">
+          <motion.div 
+            variants={socialVariants}
+            className="flex items-center justify-center gap-5 mt-10 pt-6 border-t border-slate-200/40 w-full z-10"
+          >
             {socials.instagram && (
               <a href={socials.instagram} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-slate-600 transition-colors">
                 <Instagram size={20} />
@@ -1002,14 +964,14 @@ export default function App() {
                 <Twitter size={20} />
               </a>
             )}
-          </div>
+          </motion.div>
 
           {/* Fine credit line */}
-          <div className="mt-10 text-[10px] text-slate-400 font-bold tracking-wider uppercase">
+          <div className="mt-10 text-[10px] text-slate-400 font-bold tracking-wider uppercase z-10">
             Powered by Ankara Çocuk Etkinlikler
           </div>
 
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -1099,19 +1061,6 @@ export default function App() {
             )}
           </button>
 
-          {/* AI Copilot Side Toggle */}
-          <button
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`relative p-2.5 rounded-xl transition-all border ${
-              isChatOpen 
-                ? 'bg-indigo-50 border-indigo-100 text-indigo-600 shadow-sm' 
-                : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
-            }`}
-            title="Yapay Zeka Yardımcısını Aç/Kapat"
-          >
-            <MessageSquare size={16} />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-indigo-500 border border-white animate-pulse" />
-          </button>
         </div>
       </header>
 
@@ -1122,7 +1071,7 @@ export default function App() {
         <aside className="w-[360px] h-full bg-white border-r border-slate-200 flex flex-col shrink-0 z-10 shadow-sm">
           
           {/* Navigation Subtabs inside Sidebar */}
-          <div className="grid grid-cols-4 border-b border-slate-150 p-2 gap-1 bg-slate-50">
+          <div className="grid grid-cols-2 border-b border-slate-150 p-2 gap-1 bg-slate-50">
             <button
               onClick={() => setControlTab('links')}
               className={`py-2 text-[11px] font-bold rounded-lg transition flex flex-col items-center gap-1 ${
@@ -1142,29 +1091,6 @@ export default function App() {
               }`}
             >
               <Palette size={14} /> Tasarım
-            </button>
-            <button
-              onClick={() => setControlTab('ai-helper')}
-              className={`py-2 text-[11px] font-bold rounded-lg transition flex flex-col items-center gap-1 ${
-                controlTab === 'ai-helper' 
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Sparkles size={14} className="text-indigo-600" /> AI
-            </button>
-            <button
-              onClick={() => {
-                setControlTab('analytics');
-                refreshStats();
-              }}
-              className={`py-2 text-[11px] font-bold rounded-lg transition flex flex-col items-center gap-1 ${
-                controlTab === 'analytics' 
-                  ? 'bg-white text-slate-900 shadow-sm border border-slate-100' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <BarChart3 size={14} className={controlTab === 'analytics' ? 'text-indigo-600' : 'text-slate-500'} /> Analiz
             </button>
           </div>
 
@@ -1201,39 +1127,15 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Profile bio + AI Assistant Action */}
+                  {/* Profile bio */}
                   <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 shadow-sm space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400">Biyografi Açıklaması</span>
-                      <button
-                        onClick={generateAIBio}
-                        disabled={isBioLoading}
-                        className="text-[9px] font-extrabold text-indigo-600 hover:underline flex items-center gap-1"
-                        title="Gemini ile Biyografiyi Optimize Et"
-                      >
-                        {isBioLoading ? <RefreshCw size={10} className="animate-spin" /> : <Wand2 size={10} />} AI İLE GELİŞTİR
-                      </button>
-                    </div>
+                    <span className="text-[10px] font-bold text-slate-400 block">Biyografi Açıklaması</span>
                     <textarea 
                       value={profileBio}
                       onChange={(e) => setProfileBio(e.target.value)}
                       className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none h-16 resize-none text-slate-700 leading-normal"
                       placeholder="Ankara'daki en renkli çocuk etkinlikleri, atölyeler ve aile rehberi."
                     />
-                    
-                    {/* Bio tone selector */}
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-slate-400 font-semibold">AI Tonu:</span>
-                      <select 
-                        value={bioTone} 
-                        onChange={(e) => setBioTone(e.target.value)}
-                        className="bg-transparent text-indigo-600 font-bold border-none outline-none cursor-pointer"
-                      >
-                        <option value="Sıcak ve Eğlenceli">Sıcak & Eğlenceli</option>
-                        <option value="Profesyonel ve Güvenilir">Profesyonel & Güvenilir</option>
-                        <option value="Merak Uyandırıcı ve Enerjik">Enerjik & Heyecanlı</option>
-                      </select>
-                    </div>
                   </div>
                 </section>
 
@@ -1302,6 +1204,7 @@ export default function App() {
                           onChange={(e: any) => setNewColorTheme(e.target.value)}
                           className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 outline-none"
                         >
+                          <option value="white">Saf Beyaz ⚪</option>
                           <option value="indigo">Asil İndigo</option>
                           <option value="emerald">Zümrüt Yeşil</option>
                           <option value="blue">Okyanus Mavi</option>
@@ -1406,6 +1309,7 @@ export default function App() {
                                     onChange={(e: any) => setEditingLinkData(prev => prev ? { ...prev, colorTheme: e.target.value } : null)}
                                     className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700 outline-none"
                                   >
+                                    <option value="white">Saf Beyaz ⚪</option>
                                     <option value="indigo">Asil İndigo</option>
                                     <option value="emerald">Zümrüt Yeşil</option>
                                     <option value="blue">Okyanus Mavi</option>
@@ -1725,280 +1629,6 @@ export default function App() {
                 </section>
               </div>
             )}
-
-            {/* TAB 3: GEMINI AI HELPER MAGICS */}
-            {controlTab === 'ai-helper' && (
-              <div className="space-y-6">
-                
-                {/* AI Bio Optimization tool */}
-                <section className="space-y-3">
-                  <h3 className="text-xs font-extrabold text-indigo-600 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Sparkles size={13} /> Gemini AI Biyografi Sihirbazı
-                  </h3>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Profilinizin amacına ve hedef kitlesine göre dikkat çekici, yüksek etkileşimli biyografi yazıları üretir.
-                  </p>
-
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl shadow-sm space-y-3.5">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 block mb-1">AI Ses Tonu & Stil Seçin</span>
-                      <select
-                        value={bioTone}
-                        onChange={(e) => setBioTone(e.target.value)}
-                        className="w-full text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 outline-none"
-                      >
-                        <option value="Sıcak ve Eğlenceli">Eğlenceli ve Sıcak 🧒</option>
-                        <option value="Profesyonel ve Güvenilir">Kurumsal ve Profesyonel 💼</option>
-                        <option value="Merak Uyandırıcı ve Enerjik">Heyecanlı ve Enerjik 🚀</option>
-                        <option value="Kısa, Net ve Minimalist">Minimalist ve Sade ✨</option>
-                      </select>
-                    </div>
-
-                    <button
-                      onClick={generateAIBio}
-                      disabled={isBioLoading}
-                      className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
-                    >
-                      {isBioLoading ? (
-                        <>
-                          <RefreshCw size={13} className="animate-spin" /> Yapay Zeka Yazıyor...
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 size={13} /> Biyografiyi Yeniden Yazdır
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </section>
-
-                {/* AI Suggested Links Builder (Lead Generation ideas) */}
-                <section className="space-y-3 pt-4 border-t border-slate-100">
-                  <h3 className="text-xs font-extrabold text-indigo-600 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Wand2 size={13} /> AI Link Önerileri Sihirbazı
-                  </h3>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    Profilinizin kategorisine göre en çok dönüşüm getirecek 3 bağlantı önerisi hazırlar ve doğrudan listenize ekler.
-                  </p>
-
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl shadow-sm space-y-3.5">
-                    <div>
-                      <span className="text-[10px] font-bold text-slate-400 block mb-1">Niş / Kategori Belirtin</span>
-                      <input
-                        type="text"
-                        value={nicheCategory}
-                        onChange={(e) => setNicheCategory(e.target.value)}
-                        placeholder="Örn: Yerel Çocuk Etkinlikleri Rehberi"
-                        className="w-full text-xs bg-white border border-slate-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 font-bold"
-                      />
-                    </div>
-
-                    <button
-                      onClick={suggestAILinks}
-                      disabled={isLinksLoading}
-                      className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
-                    >
-                      {isLinksLoading ? (
-                        <>
-                          <RefreshCw size={13} className="animate-spin" /> Öneriler Alınıyor...
-                        </>
-                      ) : (
-                        <>
-                          <PlusCircle size={13} /> AI Bağlantı Önerilerini Getir
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </section>
-
-              </div>
-            )}
-
-            {/* TAB 4: ANALYTICS & CLICK REPORTS */}
-            {controlTab === 'analytics' && (
-              <div className="space-y-6 animate-fadeIn">
-                
-                {/* Header with manual refresh */}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-extrabold text-indigo-600 flex items-center gap-1.5 uppercase tracking-wider">
-                    <BarChart3 size={13} /> Analiz & İstatistik
-                  </h3>
-                  <button 
-                    onClick={refreshStats}
-                    className="p-1 hover:bg-slate-100 text-slate-500 hover:text-indigo-600 rounded-lg transition-colors flex items-center gap-1 text-[10px] font-bold"
-                    title="İstatistikleri Güncelle"
-                  >
-                    <RefreshCw size={10} /> YENİLE
-                  </button>
-                </div>
-
-                {/* Main Stats Grid */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
-                    <span className="text-[9px] text-slate-400 block font-semibold">Görüntülenme</span>
-                    <span className="text-sm font-extrabold text-slate-800">{viewsCount}</span>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
-                    <span className="text-[9px] text-slate-400 block font-semibold">Tıklama</span>
-                    <span className="text-sm font-extrabold text-slate-800">{totalClicksCount}</span>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-150 p-2.5 rounded-xl text-center shadow-sm">
-                    <span className="text-[9px] text-slate-400 block font-semibold">Oran (CTR)</span>
-                    <span className="text-sm font-extrabold text-indigo-600">
-                      {viewsCount > 0 ? ((totalClicksCount / viewsCount) * 100).toFixed(1) : '0.0'}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Telefondan Test Et (Local Only) */}
-                {(() => {
-                  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-                  const localIp = localIps.length > 0 ? localIps[0] : null;
-                  const localTestUrl = localIp ? `http://${localIp}:3000/p/${currentProfileId}` : null;
-                  
-                  if (!isLocal || !localTestUrl) return null;
-                  
-                  return (
-                    <section className="p-4 bg-indigo-50/55 border border-indigo-100 rounded-xl space-y-3">
-                      <h4 className="text-[10px] font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-1">
-                        <ExternalLink size={12} /> Telefondan Test Edin
-                      </h4>
-                      <p className="text-[10px] text-slate-500 leading-normal">
-                        Telefonunuzdan linklere tıklayarak test etmek için aşağıdaki QR kodu taratın veya adrese gidin. 
-                        <span className="font-bold text-indigo-750 block mt-1">⚠️ Önemli: Telefonunuz ve bilgisayarınız aynı Wi-Fi ağına bağlı olmalıdır.</span>
-                      </p>
-                      
-                      <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-slate-150">
-                        <div className="bg-slate-50 p-1 rounded border border-slate-200 shrink-0">
-                          <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(localTestUrl)}`} 
-                            alt="Local QR Code"
-                            className="w-[90px] h-[90px]"
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <span className="text-[9px] text-slate-400 block font-semibold">Yerel Test Adresi:</span>
-                          <a 
-                            href={localTestUrl} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="text-[10px] font-mono font-bold text-indigo-650 hover:underline break-all block"
-                          >
-                            {localTestUrl}
-                          </a>
-                        </div>
-                      </div>
-                    </section>
-                  );
-                })()}
-
-                {/* Detailed breakdown list */}
-                <section className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">Bağlantı Detayları</label>
-                    
-                    {/* Sort Dropdown */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] text-slate-400 font-bold">Sıralama:</span>
-                      <select 
-                        value={analyticsSort}
-                        onChange={(e) => setAnalyticsSort(e.target.value as 'clicks' | 'order')}
-                        className="text-[9px] bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-slate-600 outline-none font-bold"
-                      >
-                        <option value="clicks">En Çok Tıklanan</option>
-                        <option value="order">Liste Sırası</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {(() => {
-                      const sortedLinks = [...links].sort((a, b) => {
-                        if (analyticsSort === 'clicks') {
-                          return b.clicks - a.clicks;
-                        }
-                        return 0; // Keep current order
-                      });
-
-                      const maxClicks = Math.max(...links.map(l => l.clicks), 1);
-
-                      return sortedLinks.map((link, idx) => {
-                        const linkCtr = viewsCount > 0 ? ((link.clicks / viewsCount) * 100) : 0;
-
-                        return (
-                          <div key={link.id} className="p-3 bg-slate-50/50 border border-slate-150 rounded-xl space-y-1.5 hover:border-slate-300 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-[10px] font-extrabold bg-slate-200 text-slate-600 w-4 h-4 rounded-full flex items-center justify-center shrink-0">
-                                  {analyticsSort === 'clicks' ? idx + 1 : links.indexOf(link) + 1}
-                                </span>
-                                <span className="text-xs font-bold text-slate-800 truncate">{link.title}</span>
-                              </div>
-                              <span className="text-[10px] font-extrabold text-indigo-600 whitespace-nowrap">
-                                {link.clicks} tıklama ({linkCtr.toFixed(1)}% CTR)
-                              </span>
-                            </div>
-
-                            {/* Custom progress bar */}
-                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-indigo-500 rounded-full transition-all duration-500" 
-                                style={{ width: `${Math.min((link.clicks / maxClicks) * 100, 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-
-                    {links.length === 0 && (
-                      <p className="text-xs text-slate-400 text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        Henüz hiç bağlantı eklenmemiş.
-                      </p>
-                    )}
-                  </div>
-                </section>
-
-                {/* Reset Stats Box */}
-                <section className="pt-4 border-t border-slate-100">
-                  <div className="p-3.5 bg-rose-50/50 border border-rose-100 rounded-xl flex items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <h4 className="text-[10px] font-extrabold text-rose-800 uppercase tracking-wider">İstatistikleri Sıfırla</h4>
-                      <p className="text-[9px] text-rose-600 leading-normal max-w-[190px]">
-                        Tıklama ve görüntülenme sayılarını tamamen temizler. Bu işlem geri alınamaz.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleResetStats}
-                      disabled={isSaving}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold transition whitespace-nowrap shadow-sm disabled:opacity-50"
-                    >
-                      SIFIRLA
-                    </button>
-                  </div>
-                </section>
-
-              </div>
-            )}
-
-          </div>
-
-          {/* Quick Stats overview footer inside Admin Sidebar */}
-          <div className="p-4 bg-slate-900 text-white text-xs space-y-2 shrink-0">
-            <div className="flex justify-between items-center text-slate-400 text-[10px] tracking-wider uppercase font-extrabold">
-              <span>Hızlı Analiz Panel</span>
-              <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-center pt-1">
-              <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/50">
-                <span className="text-[10px] text-slate-400 block font-semibold">Görüntülenme</span>
-                <span className="text-sm font-extrabold text-white">{viewsCount}</span>
-              </div>
-              <div className="bg-slate-800/80 p-2 rounded-lg border border-slate-700/50">
-                <span className="text-[10px] text-slate-400 block font-semibold">Tıklama</span>
-                <span className="text-sm font-extrabold text-indigo-400">{totalClicksCount}</span>
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -2043,35 +1673,52 @@ export default function App() {
                 <div className={`absolute inset-0 bg-gradient-to-b ${activeTheme.phoneBgClass} z-0`} />
 
                 {/* Safe layout margin container */}
-                <div className="relative z-10 flex-1 flex flex-col items-center px-5 pt-16 pb-12">
+                <div className="relative z-10 flex-1 flex flex-col items-center px-4 pt-12 pb-12 w-full">
+                  {/* Glowing blur blobs behind the profile card for depth */}
+                  <div className="absolute top-10 left-6 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl pointer-events-none z-0" />
+                  <div className="absolute top-28 right-6 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl pointer-events-none z-0" />
                   
-                  {/* Dynamic Avatar frame */}
-                  <div className="w-20 h-20 rounded-full border-4 border-white shadow-lg mb-3 flex items-center justify-center overflow-hidden shrink-0 bg-slate-200 relative animate-fadeIn">
-                    {avatarType === 'emoji' ? (
-                      <div className={`w-full h-full bg-gradient-to-tr ${selectedAvatarBg} flex items-center justify-center text-4xl`}>
-                        {selectedAvatar}
-                      </div>
-                    ) : (
-                      <img 
-                        src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80'} 
-                        alt="Avatar Preview" 
-                        className="w-full h-full object-cover" 
-                        referrerPolicy="no-referrer"
-                      />
-                    )}
+                  {/* Profile Header Card (Glassmorphism) */}
+                  <div className={`w-full p-4 rounded-[22px] flex flex-col items-center mb-6 relative overflow-hidden z-10 backdrop-blur-md border ${
+                    activeTheme.id === 'neon_cyber'
+                      ? 'bg-slate-950/50 border-slate-800/80 shadow-[0_8px_32px_rgba(0,0,0,0.3)]'
+                      : 'bg-white/70 border-white/50 shadow-[0_8px_32px_rgba(15,23,42,0.06)]'
+                  }`}>
+                    {/* Inner background glow */}
+                    <div className="absolute -top-10 -left-10 w-20 h-20 bg-gradient-to-tr from-indigo-200/20 to-purple-200/20 rounded-full blur-xl" />
+                    
+                    {/* Avatar frame */}
+                    <div className={`w-18 h-18 rounded-full border-4 ${activeTheme.id === 'neon_cyber' ? 'border-slate-800 shadow-[0_8px_20px_rgba(0,0,0,0.4)]' : 'border-white shadow-[0_8px_20px_rgba(0,0,0,0.08)]'} mb-3 flex items-center justify-center overflow-hidden shrink-0 bg-slate-100 relative z-10 transition-transform duration-500 hover:scale-105`}>
+                      {avatarType === 'emoji' ? (
+                        <div className={`w-full h-full bg-gradient-to-tr ${selectedAvatarBg} flex items-center justify-center text-3xl`}>
+                          {selectedAvatar}
+                        </div>
+                      ) : (
+                        <img 
+                          src={avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80'} 
+                          alt="Avatar Preview" 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer"
+                        />
+                      )}
+                    </div>
+
+                    {/* Profile texts with dynamic styling mapping */}
+                    <h1 className={`text-md font-extrabold text-center tracking-tight leading-tight w-full truncate px-2 relative z-10 ${
+                      activeTheme.id === 'neon_cyber' ? 'text-slate-100' : 'text-slate-800'
+                    }`}>
+                      {profileTitle || 'Profil Başlığı'}
+                    </h1>
+
+                    <p className={`text-[10px] text-center mt-1.5 leading-relaxed max-w-[200px] px-2 break-words relative z-10 ${
+                      activeTheme.id === 'neon_cyber' ? 'text-slate-400' : 'text-slate-500'
+                    }`}>
+                      {profileBio || 'Biyografi bilgisi girilmedi.'}
+                    </p>
                   </div>
 
-                  {/* Profile texts with dynamic styling mapping */}
-                  <h1 className="text-lg font-extrabold text-slate-800 text-center tracking-tight leading-tight w-full truncate px-2">
-                    {profileTitle || 'Profil Başlığı'}
-                  </h1>
-
-                  <p className="text-[11px] text-center text-slate-500 mt-1.5 mb-6 leading-relaxed max-w-[240px] px-2 break-words">
-                    {profileBio || 'Biyografi bilgisi girilmedi.'}
-                  </p>
-
                   {/* Links Loop with interactive click simulator triggers */}
-                  <div className="w-full space-y-3 flex-1">
+                  <div className="w-full space-y-3 flex-1 z-10">
                     {links.map((link) => {
                       const colorStyle = getLinkColorStyles(link.colorTheme);
                       return (
@@ -2080,7 +1727,7 @@ export default function App() {
                           whileHover={{ scale: 1.015, y: -1 }}
                           whileTap={{ scale: 0.995 }}
                           onClick={() => handleSimulateClick(link.id)}
-                          className={`w-full p-3.5 border rounded-2xl cursor-pointer flex items-center gap-3 transition-all duration-300 ${colorStyle.bg} shadow-sm`}
+                          className={`w-full p-3.5 border rounded-[22px] cursor-pointer flex items-center gap-3 transition-all duration-300 ${colorStyle.bg} shadow-sm`}
                         >
                           <div className={`w-9 h-9 rounded-xl ${colorStyle.iconBg} flex items-center justify-center shrink-0`}>
                             {renderIcon(link.iconType, "w-4.5 h-4.5")}
@@ -2130,7 +1777,7 @@ export default function App() {
                   </div>
 
                   {/* Fine credit line */}
-                  <div className="mt-8 text-[9px] text-slate-400 font-bold tracking-wider uppercase">
+                  <div className="mt-8 text-[9px] text-slate-400 font-bold tracking-wider uppercase z-10">
                     Powered by Ankara Çocuk Etkinlikler
                   </div>
 
@@ -2184,121 +1831,7 @@ export default function App() {
           </footer>
         </main>
 
-        {/* RIGHT PANEL: Gemini AI Copilot Chat Workstation */}
-        <AnimatePresence>
-          {isChatOpen && (
-            <motion.aside
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: '360px', opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              className="h-full border-l border-slate-200 bg-white flex flex-col overflow-hidden relative z-20 shadow-[0_0_40px_rgba(15,23,42,0.04)] shrink-0"
-            >
-              {/* Sidebar Header */}
-              <div className="px-5 h-14 border-b border-slate-150 flex items-center justify-between shrink-0 bg-slate-50/50">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={14} className="text-indigo-600" />
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">Gemini AI Copilot</span>
-                </div>
-                <button
-                  onClick={() => setIsChatOpen(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              </div>
 
-              {/* Chat conversations history stream */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/40">
-                {chatMessages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${
-                      msg.role === 'user' ? 'items-end' : 'items-start'
-                    } max-w-[85%] ${msg.role === 'user' ? 'ml-auto' : 'mr-auto'}`}
-                  >
-                    <div
-                      className={`p-3.5 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                        msg.role === 'user'
-                          ? 'bg-indigo-600 text-white rounded-tr-none'
-                          : 'bg-white border border-slate-150 text-slate-800 rounded-tl-none'
-                      }`}
-                    >
-                      <p className="whitespace-pre-line">
-                        {msg.content}
-                      </p>
-                    </div>
-
-                    {/* AI action integrations for copilot suggestions */}
-                    {msg.role === 'assistant' && msg.id !== 'msg-init' && (
-                      <div className="flex items-center gap-2 mt-1.5 px-1 text-[9px] text-slate-400">
-                        <span>Gemini Önerisi</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {isChatLoading && (
-                  <div className="flex flex-col items-start max-w-[85%] mr-auto">
-                    <div className="bg-white border border-slate-150 text-slate-500 p-3.5 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 shadow-sm">
-                      <div className="flex gap-1 shrink-0">
-                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" />
-                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                      <span className="font-semibold text-[10px] text-slate-400">Gemini yazıyor...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Preset prompt helper tags */}
-              <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 shrink-0">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Hızlı Soru Kalıpları</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    'Tıklama oranımı nasıl artırabilirim?',
-                    'Bana etkileyici link başlıkları öner',
-                    'Daha fazla takipçi kazanma stratejileri'
-                  ].map((preset, index) => (
-                    <button
-                      key={index}
-                      disabled={isChatLoading}
-                      onClick={() => handleSendChatMessage(preset)}
-                      className="px-2.5 py-1 text-[10px] bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/20 text-slate-600 rounded-lg text-left transition disabled:opacity-50 font-semibold shadow-sm"
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Interactive prompt message text input form */}
-              <div className="p-4 border-t border-slate-150 shrink-0 bg-white">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSendChatMessage();
-                    }}
-                    placeholder="Büyüme taktikleri veya fikirler sorun..."
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
-                    disabled={isChatLoading}
-                  />
-                  <button
-                    disabled={isChatLoading || !chatInput.trim()}
-                    onClick={() => handleSendChatMessage()}
-                    className="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-colors disabled:bg-slate-300 shadow-sm shrink-0"
-                  >
-                    <Send size={14} />
-                  </button>
-                </div>
-              </div>
-
-            </motion.aside>
-          )}
-        </AnimatePresence>
 
       </div>
 

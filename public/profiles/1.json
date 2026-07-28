@@ -1,6 +1,6 @@
 {
   "profileTitle": "Ankara Çocuk Etkinlikler",
-  "profileBio": "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada! ✨",
+  "profileBio": "Ankara'daki en güncel çocuk etkinlikleri, atölyeler ve aile rehberi burada ✨",
   "selectedAvatar": "🧒",
   "selectedAvatarBg": "from-amber-200 to-orange-400",
   "avatarType": "image",
@@ -14,7 +14,16 @@
       "url": "https://ankaracocuketkinlikler.com",
       "iconType": "web",
       "colorTheme": "blue",
-      "clicks": 1
+      "clicks": 0
+    },
+    {
+      "id": "link-4",
+      "title": "Tanıtım Paketi ve Fiyatı",
+      "subtitle": "Paket kapsamını ve fiyatı inceleyin",
+      "url": "https://ankara-cocuk-landing.vercel.app/",
+      "iconType": "web",
+      "colorTheme": "violet",
+      "clicks": 0
     },
     {
       "id": "link-2",
@@ -31,16 +40,7 @@
       "subtitle": "Ücretsiz Uygulamamız",
       "url": "https://play.google.com/store/apps/details?id=com.ankara.cocuk.etkinlikler",
       "iconType": "play",
-      "colorTheme": "indigo",
-      "clicks": 0
-    },
-    {
-      "id": "link-4",
-      "title": "Tanıtım - İşbirliği",
-      "subtitle": "Tanıtım ve işbirliği detayları",
-      "url": "https://ankara-cocuk-landing.vercel.app/",
-      "iconType": "web",
-      "colorTheme": "violet",
+      "colorTheme": "white",
       "clicks": 0
     }
   ],
