@@ -434,6 +434,47 @@ app.delete('/api/profile/:id', (req, res) => {
     return res.status(500).json({ error: err.message || 'Failed to delete profile.' });
   }
 });
+
+// POST /api/lead/:id - record parent lead submission
+app.post('/api/lead/:id', (req, res) => {
+  try {
+    ensureProfilesSetup();
+    const profileId = req.params.id;
+    const { parentName, phone, childAgeOrGrade, programInterest, note } = req.body;
+    if (!parentName || !phone) {
+      return res.status(400).json({ error: 'Parent name and phone are required.' });
+    }
+
+    const profilePath = path.join(profilesDir, `${profileId}.json`);
+    let profileData: any = {};
+    if (fs.existsSync(profilePath)) {
+      profileData = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+    }
+
+    const newLead = {
+      id: 'lead_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      parentName,
+      phone,
+      childAgeOrGrade: childAgeOrGrade || '',
+      programInterest: programInterest || 'Genel Bilgi',
+      note: note || '',
+      createdAt: new Date().toISOString(),
+      status: 'new',
+    };
+
+    if (!Array.isArray(profileData.leads)) {
+      profileData.leads = [];
+    }
+    profileData.leads.unshift(newLead);
+
+    fs.writeFileSync(profilePath, JSON.stringify(profileData, null, 2), 'utf-8');
+    return res.json({ success: true, lead: newLead, totalLeads: profileData.leads.length });
+  } catch (err: any) {
+    console.error('Record Lead Error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to record lead.' });
+  }
+});
+
 // POST /api/rename-profile/:id - rename profile ID and title
 app.post('/api/rename-profile/:id', (req, res) => {
   try {

@@ -32,8 +32,21 @@ import {
   ChevronDown,
   ExternalLink,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  GraduationCap,
+  Utensils,
+  ShieldCheck,
+  Users,
+  Calendar,
+  QrCode
 } from 'lucide-react';
+import { LeadCaptureModal } from './components/LeadCaptureModal';
+import { WeeklyMenuModal } from './components/WeeklyMenuModal';
+import { LoginModal } from './components/LoginModal';
+import { ParentLeadsModal } from './components/ParentLeadsModal';
+import { PresetSelectorModal } from './components/PresetSelectorModal';
+import { ParentLead } from './types';
+
 
 // Google Play Store Icon Component
 const PlayStoreIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
@@ -243,6 +256,21 @@ export default function App() {
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Institutional & Enterprise SaaS States
+  const [userRole, setUserRole] = useState<'guest' | 'school' | 'superadmin'>('guest');
+  const [parentLeads, setParentLeads] = useState<ParentLead[]>([]);
+  const [whatsappNotifyNumber, setWhatsappNotifyNumber] = useState<string>('905000000000');
+  const [weeklyMenuUrl, setWeeklyMenuUrl] = useState<string>('');
+  const [weeklyMenuTitle, setWeeklyMenuTitle] = useState<string>('Haftalık Yemek Menüsü');
+
+  // Modals visibility
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLeadsModalOpen, setIsLeadsModalOpen] = useState(false);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState(false);
+
+
   // Slugify helper
   const slugify = (text: string) => {
     const trMap: Record<string, string> = {
@@ -334,6 +362,10 @@ export default function App() {
           setLinks(activeProfileData.links || []);
           setSocials(activeProfileData.socials || { instagram: '', whatsapp: '', youtube: '', twitter: '' });
           setViewsCount(activeProfileData.views || 0);
+          setParentLeads(activeProfileData.leads || []);
+          setWhatsappNotifyNumber(activeProfileData.whatsappNotifyNumber || '905000000000');
+          setWeeklyMenuUrl(activeProfileData.weeklyMenuUrl || '');
+          setWeeklyMenuTitle(activeProfileData.weeklyMenuTitle || 'Haftalık Yemek Menüsü');
         }
       } catch (err) {
         console.error('Error loading profile:', err);
@@ -695,7 +727,11 @@ export default function App() {
           activeThemeId,
           links,
           socials,
-          views: viewsCount
+          views: viewsCount,
+          leads: parentLeads,
+          whatsappNotifyNumber,
+          weeklyMenuUrl,
+          weeklyMenuTitle
         })
       });
 
@@ -726,6 +762,14 @@ export default function App() {
   // Icon Component Mapper for Link Items
   const renderIcon = (type: LinkItem['iconType'], className = "w-5 h-5") => {
     switch (type) {
+      case 'form':
+        return <GraduationCap className={className} />;
+      case 'menu':
+        return <Utensils className={className} />;
+      case 'calendar':
+        return <Calendar className={className} />;
+      case 'map':
+        return <Globe className={className} />;
       case 'whatsapp':
         return <MessageCircle className={className} />;
       case 'instagram':
@@ -898,10 +942,16 @@ export default function App() {
                   variants={linkVariants}
                   whileHover={{ scale: 1.018, y: -1.5, shadow: "0px 10px 20px rgba(0, 0, 0, 0.08)" }}
                   whileTap={{ scale: 0.995 }}
-                  onClick={() => {
+                  onClick={(e) => {
+                    if (link.actionType === 'leadForm' || link.url === '#lead-form') {
+                      e.preventDefault();
+                      setIsLeadModalOpen(true);
+                    } else if (link.actionType === 'weeklyMenu' || link.url === '#weekly-menu') {
+                      e.preventDefault();
+                      setIsMenuModalOpen(true);
+                    }
                     try {
                       fetch(`/api/track-click/${currentProfileId}/${link.id}`, { method: 'POST' }).catch(() => {});
-                      // Dynamic import to safely track custom link clicks on Vercel
                       import('@vercel/analytics').then(({ track }) => {
                         track('Link Click', {
                           profile: currentProfileId,
@@ -909,7 +959,7 @@ export default function App() {
                           url: link.url
                         });
                       }).catch(() => {});
-                    } catch(e){}
+                    } catch(err){}
                   }}
                   className={`w-full p-4 border rounded-[22px] flex items-center gap-3.5 transition-all duration-300 ${colorStyle.bg} shadow-sm`}
                 >
@@ -1039,6 +1089,33 @@ export default function App() {
               </button>
             )}
           </div>
+
+          {/* Institutional SaaS Quick Actions */}
+          <button
+            onClick={() => setIsPresetModalOpen(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+          >
+            <Sparkles size={14} /> Hazır Şablonlar
+          </button>
+
+          <button
+            onClick={() => setIsLeadsModalOpen(true)}
+            className="relative px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+          >
+            <Users size={14} /> Veli Talepleri
+            {parentLeads.length > 0 && (
+              <span className="bg-indigo-600 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
+                {parentLeads.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsLoginModalOpen(true)}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+          >
+            <ShieldCheck size={14} /> Okul Girişi
+          </button>
 
           {saveSuccess && (
             <span className="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">
@@ -2017,7 +2094,77 @@ export default function App() {
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      {/* Institutional Enterprise SaaS Modals */}
+      <LeadCaptureModal
+        isOpen={isLeadModalOpen}
+        onClose={() => setIsLeadModalOpen(false)}
+        institutionTitle={profileTitle}
+        whatsappNotifyNumber={whatsappNotifyNumber}
+        onSubmitLead={async (lead) => {
+          const newLead: ParentLead = {
+            ...lead,
+            id: 'lead_' + Date.now(),
+            createdAt: new Date().toISOString(),
+            status: 'new'
+          };
+          setParentLeads(prev => [newLead, ...prev]);
+          try {
+            await fetch(`/api/lead/${currentProfileId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(lead)
+            });
+          } catch(err) {
+            console.error('Lead record error:', err);
+          }
+        }}
+      />
+
+      <WeeklyMenuModal
+        isOpen={isMenuModalOpen}
+        onClose={() => setIsMenuModalOpen(false)}
+        institutionTitle={profileTitle}
+        menuUrl={weeklyMenuUrl}
+        menuTitle={weeklyMenuTitle}
+      />
+
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        profilesList={profilesList}
+        onLoginSuccess={(role, profileId) => {
+          setUserRole(role);
+          if (profileId) {
+            handleSwitchProfile(profileId);
+          }
+        }}
+      />
+
+      <ParentLeadsModal
+        isOpen={isLeadsModalOpen}
+        onClose={() => setIsLeadsModalOpen(false)}
+        institutionTitle={profileTitle}
+        leads={parentLeads}
+        onUpdateLeadStatus={(leadId, status) => {
+          setParentLeads(prev => prev.map(l => l.id === leadId ? { ...l, status } : l));
+        }}
+      />
+
+      <PresetSelectorModal
+        isOpen={isPresetModalOpen}
+        onClose={() => setIsPresetModalOpen(false)}
+        onSelectPreset={(preset) => {
+          setProfileTitle(preset.name.replace(/^[^\s]+\s/, ''));
+          setProfileBio(preset.defaultBio);
+          setActiveThemeId(preset.suggestedTheme);
+          const newLinksList = preset.suggestedLinks.map((lnk, idx) => ({
+            ...lnk,
+            id: `link-preset-${Date.now()}-${idx}`,
+            clicks: 0
+          }));
+          setLinks(newLinksList);
+        }}
+      />
 
     </div>
   );
