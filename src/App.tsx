@@ -367,6 +367,11 @@ export default function App() {
           setWeeklyMenuUrl(activeProfileData.weeklyMenuUrl || '');
           setWeeklyMenuTitle(activeProfileData.weeklyMenuTitle || 'Haftalık Yemek Menüsü');
         }
+
+        // Open login modal if URL is /login or ?login=true
+        if (pathname === '/login' || window.location.search.includes('login=true')) {
+          setIsLoginModalOpen(true);
+        }
       } catch (err) {
         console.error('Error loading profile:', err);
         setApiError('Profil yüklenirken bir hata oluştu.');
@@ -1154,17 +1159,29 @@ export default function App() {
             )}
           </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsLoginModalOpen(true);
-            }}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
-          >
-            <ShieldCheck size={14} /> Okul Girişi
-          </button>
+          {userRole !== 'guest' ? (
+            <button
+              type="button"
+              onClick={() => setUserRole('guest')}
+              className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              title="Oturumu Kapatmak için tıklayın"
+            >
+              <ShieldCheck size={14} className="text-emerald-500" />
+              {userRole === 'superadmin' ? 'Super-Admin' : 'Okul Paneli'} (Çıkış)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsLoginModalOpen(true);
+              }}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <ShieldCheck size={14} /> Okul Girişi
+            </button>
+          )}
 
           {saveSuccess && (
             <span className="text-xs text-green-600 font-bold flex items-center gap-1 bg-green-50 px-3 py-1.5 rounded-lg border border-green-100">

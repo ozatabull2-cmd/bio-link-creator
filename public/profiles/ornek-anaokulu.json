@@ -16,7 +16,7 @@
       "badgeText": "Erken Kayıt",
       "actionType": "leadForm",
       "id": "link-preset-1786252369177-0",
-      "clicks": 0
+      "clicks": 2
     },
     {
       "title": "💬 Veli Danışma & Aday Kayıt Hattı",
@@ -25,7 +25,7 @@
       "iconType": "whatsapp",
       "colorTheme": "emerald",
       "id": "link-preset-1786252369177-1",
-      "clicks": 0
+      "clicks": 1
     },
     {
       "title": "🏫 Kampüsümüzü Sanal Turla Gezin",
@@ -34,7 +34,7 @@
       "iconType": "youtube",
       "colorTheme": "rose",
       "id": "link-preset-1786252369177-2",
-      "clicks": 0
+      "clicks": 1
     },
     {
       "title": "📅 2026 Akademik Takvim & Duyurular",
@@ -43,7 +43,7 @@
       "iconType": "menu",
       "colorTheme": "blue",
       "id": "link-preset-1786252369177-3",
-      "clicks": 0
+      "clicks": 1
     },
     {
       "title": "📍 Kampüs İletişim & Lokasyon",
@@ -52,7 +52,7 @@
       "iconType": "map",
       "colorTheme": "slate",
       "id": "link-preset-1786252369177-4",
-      "clicks": 0
+      "clicks": 1
     }
   ],
   "socials": {
