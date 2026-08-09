@@ -2166,6 +2166,8 @@ export default function App() {
             </motion.div>
           </div>
         )}
+      </AnimatePresence>
+
       {/* Institutional Enterprise SaaS Modals */}
       <LeadCaptureModal
         isOpen={isLeadModalOpen}
