@@ -1021,6 +1021,39 @@ export default function App() {
             Powered by Ankara Çocuk Etkinlikler
           </div>
 
+          {/* Institutional Enterprise SaaS Modals for Public View */}
+          <LeadCaptureModal
+            isOpen={isLeadModalOpen}
+            onClose={() => setIsLeadModalOpen(false)}
+            institutionTitle={profileTitle}
+            whatsappNotifyNumber={whatsappNotifyNumber}
+            onSubmitLead={async (lead) => {
+              const newLead: ParentLead = {
+                ...lead,
+                id: 'lead_' + Date.now(),
+                createdAt: new Date().toISOString(),
+                status: 'new'
+              };
+              setParentLeads(prev => [newLead, ...prev]);
+              try {
+                await fetch(`/api/lead/${currentProfileId}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(lead)
+                });
+              } catch(err) {
+                console.error('Lead record error:', err);
+              }
+            }}
+          />
+
+          <WeeklyMenuModal
+            isOpen={isMenuModalOpen}
+            onClose={() => setIsMenuModalOpen(false)}
+            institutionTitle={profileTitle}
+            menuUrl={weeklyMenuUrl}
+            menuTitle={weeklyMenuTitle}
+          />
         </motion.div>
       </div>
     );
@@ -1092,15 +1125,25 @@ export default function App() {
 
           {/* Institutional SaaS Quick Actions */}
           <button
-            onClick={() => setIsPresetModalOpen(true)}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsPresetModalOpen(true);
+            }}
+            className="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95"
           >
             <Sparkles size={14} /> Hazır Şablonlar
           </button>
 
           <button
-            onClick={() => setIsLeadsModalOpen(true)}
-            className="relative px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsLeadsModalOpen(true);
+            }}
+            className="relative px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <Users size={14} /> Veli Talepleri
             {parentLeads.length > 0 && (
@@ -1111,8 +1154,13 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => setIsLoginModalOpen(true)}
-            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsLoginModalOpen(true);
+            }}
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer active:scale-95"
           >
             <ShieldCheck size={14} /> Okul Girişi
           </button>
@@ -1188,6 +1236,30 @@ export default function App() {
             {controlTab === 'links' && (
               <div className="space-y-6">
                 
+                {/* Institutional Quick Actions Banner */}
+                <div className="bg-slate-900 p-4 rounded-2xl text-white space-y-3 shadow-md border border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-400">Kurumsal Okul Paneli</span>
+                    <span className="text-[9px] bg-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-300 border border-indigo-500/30 font-mono">SaaS v2.0</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsPresetModalOpen(true)}
+                      className="py-2 px-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <Sparkles size={13} /> Şablon Yükle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsLeadsModalOpen(true)}
+                      className="py-2 px-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+                    >
+                      <Users size={13} /> Veli Talepleri ({parentLeads.length})
+                    </button>
+                  </div>
+                </div>
+
                 {/* Profile Editor Details */}
                 <section className="space-y-3.5">
                   <label className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Profil Kimliği</label>
