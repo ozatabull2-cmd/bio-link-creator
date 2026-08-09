@@ -368,8 +368,14 @@ export default function App() {
           setWeeklyMenuTitle(activeProfileData.weeklyMenuTitle || 'Haftalık Yemek Menüsü');
         }
 
-        // Open login modal if URL is /login or ?login=true
-        if (pathname === '/login' || window.location.search.includes('login=true')) {
+        // Open login modal if URL is /login, /admin, ?login=true, ?admin=true, or ?edit=true
+        if (
+          pathname === '/login' ||
+          pathname === '/admin' ||
+          window.location.search.includes('login=true') ||
+          window.location.search.includes('admin=true') ||
+          window.location.search.includes('edit=true')
+        ) {
           setIsLoginModalOpen(true);
         }
       } catch (err) {
@@ -849,8 +855,17 @@ export default function App() {
 
   // Check if we are in public view mode or edit mode
   const isPublicPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/p/');
+  const isExplicitLoginOrEdit = typeof window !== 'undefined' && (
+    window.location.pathname === '/login' ||
+    window.location.pathname === '/admin' ||
+    window.location.search.includes('edit=true') ||
+    window.location.search.includes('login=true') ||
+    window.location.search.includes('admin=true') ||
+    userRole !== 'guest'
+  );
+  
   const isEditMode = !isPublicPath && (
-    window.location.search.includes('edit=true') || 
+    isExplicitLoginOrEdit ||
     (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'))
   );
 
