@@ -855,17 +855,11 @@ export default function App() {
 
   // Check if we are in public view mode or edit mode
   const isPublicPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/p/');
-  const isExplicitLoginOrEdit = typeof window !== 'undefined' && (
-    window.location.pathname === '/login' ||
-    window.location.pathname === '/admin' ||
-    window.location.search.includes('edit=true') ||
-    window.location.search.includes('login=true') ||
-    window.location.search.includes('admin=true') ||
-    userRole !== 'guest'
-  );
   
+  // Admin Management Panel is strictly restricted to authenticated users (userRole !== 'guest')
+  // or local testing on localhost without ?view=public
   const isEditMode = !isPublicPath && (
-    isExplicitLoginOrEdit ||
+    userRole !== 'guest' || 
     (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'))
   );
 
@@ -2237,7 +2231,12 @@ export default function App() {
 
       <LoginModal
         isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
+        onClose={() => {
+          setIsLoginModalOpen(false);
+          if (userRole === 'guest') {
+            window.history.replaceState({}, '', '/?view=public');
+          }
+        }}
         profilesList={profilesList}
         onLoginSuccess={(role, profileId) => {
           setUserRole(role);
