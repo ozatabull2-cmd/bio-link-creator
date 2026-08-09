@@ -691,12 +691,10 @@ export default function App() {
     setLinks(reordered);
   };
 
-  // Resolve public url dynamically, defaulting to the production Vercel domain if run locally
+  // Resolve public url dynamically
   const getPublicUrl = () => {
-    const domain = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'https://linklerimiz.vercel.app'
-      : window.location.origin;
-    return `${domain}/p/${currentProfileId}`;
+    const origin = window.location.origin;
+    return `${origin}/p/${currentProfileId}`;
   };
 
   // Copy Profile URL helper
@@ -845,8 +843,11 @@ export default function App() {
   }
 
   // Check if we are in public view mode or edit mode
-  // If ?edit=true or running locally without ?view=public, we show the admin panel.
-  const isEditMode = window.location.search.includes('edit=true') || (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'));
+  const isPublicPath = typeof window !== 'undefined' && window.location.pathname.startsWith('/p/');
+  const isEditMode = !isPublicPath && (
+    window.location.search.includes('edit=true') || 
+    (window.location.hostname === 'localhost' && !window.location.search.includes('view=public'))
+  );
 
   if (!isEditMode) {
     if (apiError) {
@@ -2227,17 +2228,47 @@ export default function App() {
       <PresetSelectorModal
         isOpen={isPresetModalOpen}
         onClose={() => setIsPresetModalOpen(false)}
-        onSelectPreset={(preset) => {
-          if (confirm(`'${preset.name}' şablonunu mevcut '${profileTitle}' profiline uygulamak istediğinizden emin misiniz?\n\nBu işlem profilinizin başlık, bio ve linklerini ilgili şablon içeriğiyle güncelleyecektir.`)) {
-            setProfileTitle(preset.name.replace(/^[^\s]+\s/, ''));
-            setProfileBio(preset.defaultBio);
-            setActiveThemeId(preset.suggestedTheme);
+        onSelectPreset={async (preset) => {
+          if (confirm(`'${preset.name}' şablonunu '${profileTitle}' profiline uygulamak ve hemen yayınlamak istediğinizden emin misiniz?`)) {
+            const cleanTitle = preset.name.replace(/^[^\s]+\s/, '');
             const newLinksList = preset.suggestedLinks.map((lnk, idx) => ({
               ...lnk,
               id: `link-preset-${Date.now()}-${idx}`,
               clicks: 0
             }));
+
+            setProfileTitle(cleanTitle);
+            setProfileBio(preset.defaultBio);
+            setActiveThemeId(preset.suggestedTheme);
             setLinks(newLinksList);
+
+            // Auto-save immediately to server disk so live URL is instantly updated
+            try {
+              await fetch(`/api/save-profile/${currentProfileId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  profileTitle: cleanTitle,
+                  profileBio: preset.defaultBio,
+                  selectedAvatar,
+                  selectedAvatarBg,
+                  avatarType,
+                  avatarUrl,
+                  activeThemeId: preset.suggestedTheme,
+                  links: newLinksList,
+                  socials,
+                  views: viewsCount,
+                  leads: parentLeads,
+                  whatsappNotifyNumber,
+                  weeklyMenuUrl,
+                  weeklyMenuTitle
+                })
+              });
+              setSaveSuccess(true);
+              setTimeout(() => setSaveSuccess(false), 2000);
+            } catch (err) {
+              console.error('Preset auto-save error:', err);
+            }
           }
         }}
       />

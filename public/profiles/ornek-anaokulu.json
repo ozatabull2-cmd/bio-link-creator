@@ -1,0 +1,69 @@
+{
+  "profileTitle": "Kolej & Özel Okul",
+  "profileBio": "Anaokulu, İlkokul, Ortaokul & Lise. Geleceğin liderlerini dünya standartlarında multidisipliner eğitimle yetiştiriyoruz. 🏛️🌟",
+  "selectedAvatar": "👤",
+  "selectedAvatarBg": "from-blue-200 to-indigo-400",
+  "avatarType": "emoji",
+  "avatarUrl": "",
+  "activeThemeId": "royal_indigo",
+  "links": [
+    {
+      "title": "📝 Bursluluk & Kabul Sınavı Başvurusu",
+      "subtitle": "%100'e varan eğitim bursu fırsatı için hemen kaydolun",
+      "url": "#lead-form",
+      "iconType": "calendar",
+      "colorTheme": "indigo",
+      "badgeText": "Erken Kayıt",
+      "actionType": "leadForm",
+      "id": "link-preset-1786252369177-0",
+      "clicks": 0
+    },
+    {
+      "title": "💬 Veli Danışma & Aday Kayıt Hattı",
+      "subtitle": "Eğitim uzmanlarımızla canlı görüşme başlatın",
+      "url": "https://wa.me/905000000000",
+      "iconType": "whatsapp",
+      "colorTheme": "emerald",
+      "id": "link-preset-1786252369177-1",
+      "clicks": 0
+    },
+    {
+      "title": "🏫 Kampüsümüzü Sanal Turla Gezin",
+      "subtitle": "Laboratuvarlar, spor alanları ve derslikleri keşfedin",
+      "url": "https://youtube.com",
+      "iconType": "youtube",
+      "colorTheme": "rose",
+      "id": "link-preset-1786252369177-2",
+      "clicks": 0
+    },
+    {
+      "title": "📅 2026 Akademik Takvim & Duyurular",
+      "subtitle": "Sınav tarihleri, kulüp çalışmaları ve etkinlikler",
+      "url": "#academic-calendar",
+      "iconType": "menu",
+      "colorTheme": "blue",
+      "id": "link-preset-1786252369177-3",
+      "clicks": 0
+    },
+    {
+      "title": "📍 Kampüs İletişim & Lokasyon",
+      "subtitle": "Kampüsümüze yol tarifi alın ve randevu oluşturun",
+      "url": "https://maps.google.com",
+      "iconType": "map",
+      "colorTheme": "slate",
+      "id": "link-preset-1786252369177-4",
+      "clicks": 0
+    }
+  ],
+  "socials": {
+    "instagram": "",
+    "whatsapp": "",
+    "youtube": "",
+    "twitter": ""
+  },
+  "views": 0,
+  "leads": [],
+  "whatsappNotifyNumber": "905000000000",
+  "weeklyMenuUrl": "",
+  "weeklyMenuTitle": "Haftalık Yemek Menüsü"
+}
