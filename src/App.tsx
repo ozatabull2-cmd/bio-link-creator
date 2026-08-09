@@ -2228,15 +2228,17 @@ export default function App() {
         isOpen={isPresetModalOpen}
         onClose={() => setIsPresetModalOpen(false)}
         onSelectPreset={(preset) => {
-          setProfileTitle(preset.name.replace(/^[^\s]+\s/, ''));
-          setProfileBio(preset.defaultBio);
-          setActiveThemeId(preset.suggestedTheme);
-          const newLinksList = preset.suggestedLinks.map((lnk, idx) => ({
-            ...lnk,
-            id: `link-preset-${Date.now()}-${idx}`,
-            clicks: 0
-          }));
-          setLinks(newLinksList);
+          if (confirm(`'${preset.name}' şablonunu mevcut '${profileTitle}' profiline uygulamak istediğinizden emin misiniz?\n\nBu işlem profilinizin başlık, bio ve linklerini ilgili şablon içeriğiyle güncelleyecektir.`)) {
+            setProfileTitle(preset.name.replace(/^[^\s]+\s/, ''));
+            setProfileBio(preset.defaultBio);
+            setActiveThemeId(preset.suggestedTheme);
+            const newLinksList = preset.suggestedLinks.map((lnk, idx) => ({
+              ...lnk,
+              id: `link-preset-${Date.now()}-${idx}`,
+              clicks: 0
+            }));
+            setLinks(newLinksList);
+          }
         }}
       />
 
