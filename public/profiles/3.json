@@ -18,9 +18,9 @@
     },
     {
       "id": "link-4",
-      "title": "Tanıtım Paketi ve Fiyatı",
+      "title": "Tanıtım Paketlerimiz",
       "subtitle": "Paket kapsamını ve fiyatı inceleyin",
-      "url": "https://rotio.link/t-any",
+      "url": "https://rotio.link/landing-v3",
       "iconType": "web",
       "colorTheme": "violet",
       "clicks": 0
@@ -50,5 +50,9 @@
     "youtube": "",
     "twitter": ""
   },
-  "views": 0
+  "views": 0,
+  "leads": [],
+  "whatsappNotifyNumber": "905000000000",
+  "weeklyMenuUrl": "",
+  "weeklyMenuTitle": "Haftalık Yemek Menüsü"
 }
